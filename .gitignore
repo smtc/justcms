@@ -1,0 +1,9 @@
+build
+lib-cov
+coverage.html
+.DS_Store
+node_modules
+*.sock
+*.swp
+*.exe
+*.bat
