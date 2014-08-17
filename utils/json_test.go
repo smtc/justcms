@@ -1,22 +1,25 @@
 package utils
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
-type TestModel struct {
+type TestJsonModel struct {
 	Name     string
 	Age      int
 	Password string
 }
 
 func TestToJson(t *testing.T) {
-	m := TestModel{
+	m := TestJsonModel{
 		Name: "name",
 		Age:  18,
 	}
 
 	parms := []string{"Name", "Age", "None"}
 
-	s, err := ToJson(m, parms)
+	s, err := ToJson(m, parms, FilterModeInclude)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -25,7 +28,7 @@ func TestToJson(t *testing.T) {
 		t.Error("error")
 	}
 
-	s, err = ToJsonMust(m, parms)
+	s, err = ToJson(m, parms, FilterModeIncludeMust)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -33,7 +36,7 @@ func TestToJson(t *testing.T) {
 		t.Error("error")
 	}
 
-	s, err = ToJsonEx(m, []string{"Password"})
+	s, err = ToJson(m, []string{"Password"}, FilterModeExclude)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -41,8 +44,14 @@ func TestToJson(t *testing.T) {
 		t.Error("error")
 	}
 
-	for i := 0; i <= 10000; i++ {
-		ToJson(m, parms)
+	list := []TestJsonModel{
+		TestJsonModel{Name: "test1", Age: 18},
+		TestJsonModel{Name: "test2", Age: 19},
 	}
 
+	s, err = ToJson(list, []string{}, FilterModeExclude)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	fmt.Println(s)
 }
