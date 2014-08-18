@@ -54,12 +54,19 @@ func ToMap(v interface{}, keys []string, mode filterMode) (map[string]interface{
 
 func ToMapList(v interface{}, keys []string, mode filterMode) ([]map[string]interface{}, error) {
 	s := reflect.ValueOf(v)
+
+	if s.Kind() != reflect.Slice {
+		m, err := ToMap(v, keys, mode)
+		return []map[string]interface{}{m}, err
+	}
+
 	var (
 		ms    map[string]interface{}
 		err   error
 		count = s.Len()
+		list  = make([]map[string]interface{}, count)
 	)
-	list := make([]map[string]interface{}, count)
+
 	for i := 0; i < count; i++ {
 		ms, err = ToMap(s.Index(i).Interface(), keys, mode)
 		if err != nil {
@@ -68,5 +75,6 @@ func ToMapList(v interface{}, keys []string, mode filterMode) ([]map[string]inte
 		}
 		list[i] = ms
 	}
+
 	return list, nil
 }

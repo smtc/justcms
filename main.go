@@ -1,19 +1,26 @@
 package main
 
 import (
-	"fmt"
+	"net/http"
 
-	"./models"
-	"./utils"
+	"github.com/zenazn/goji"
+
+	"./admin"
+	_ "./models"
+)
+
+var (
+	templatePath = "./assets/templates/"
 )
 
 func main() {
-	users := []models.Account{
-		models.Account{Name: "test1"},
-		models.Account{Name: "test2"},
-	}
+	run()
+}
 
-	ms, _ := utils.ToMapList(users, []string{"Name"}, utils.FilterModeInclude)
+func run() {
+	// route /admin
+	goji.Handle("/admin/*", admin.AdminMux())
+	goji.Get("/admin", http.RedirectHandler("/admin/", 301))
 
-	fmt.Println(ms)
+	goji.Serve()
 }
