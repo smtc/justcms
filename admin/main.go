@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"../utils"
+	"github.com/smtc/JustCms/utils"
 	"github.com/zenazn/goji/web"
 	"github.com/zenazn/goji/web/middleware"
 )

@@ -5,12 +5,13 @@ import (
 	"net/http"
 
 	"github.com/guotie/config"
+	"github.com/guotie/deferinit"
 	"github.com/smtc/JustCms/models"
 	"github.com/smtc/JustCms/utils"
 	"github.com/zenazn/goji"
 
-	"./admin"
-	_ "./models"
+	"github.com/smtc/JustCms/admin"
+	_ "github.com/smtc/JustCms/models"
 )
 
 var (
@@ -19,6 +20,8 @@ var (
 
 func main() {
 	config.ReadCfg(*configFn)
+	deferinit.InitAll()
+
 	models.InitDB()
 	run()
 }
