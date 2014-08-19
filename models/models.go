@@ -1,10 +1,8 @@
 package models
 
-import "github.com/smtc/JustCms/models/db"
+import "github.com/smtc/JustCms/database"
 
 func InitDB() {
-	db := db.GetDB("")
-	//db.AutoMigrate(Account{})
-	println(db)
-	db.CreateTable(&Account{})
+	db := database.GetDB("")
+	db.AutoMigrate(Account{})
 }

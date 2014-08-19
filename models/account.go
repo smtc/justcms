@@ -53,3 +53,23 @@ type AccountMeta struct {
 	Plugin string `sql:"size:180"`
 	//Meta   utils.SQLGenericMap `sql:"type:text"`
 }
+
+var (
+	account_db = ""
+)
+
+func AccountSave(acct *Account) error {
+	return nil
+}
+
+func AccountGet(id int64) (Account, error) {
+	return Account{}, nil
+}
+
+func AccountList(page, size int, filter map[string]interface{}) ([]Account, error) {
+	return []Account{}, nil
+}
+
+func AccountDelete(id int64) error {
+	return nil
+}

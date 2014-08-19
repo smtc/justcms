@@ -1,12 +1,8 @@
-package db
+package database
 
 import (
 	"testing"
 )
-
-func TestInitDB(t *testing.T) {
-
-}
 
 func TestObjectID(t *testing.T) {
 	pid = _genpid()

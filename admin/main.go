@@ -26,6 +26,9 @@ func AdminMux() *web.Mux {
 
 	mux.Get(regexp.MustCompile(`^/admin/(?P<class>.+)\.(?P<model>.+)\.(?P<fn>.+)$`), templateHandler)
 
+	// 这里有点乱，待重新规划
+	mux.Get(ADMIN_ROUTE+"account/user/", AccountList)
+
 	mux.NotFound(utils.NotFound)
 	return mux
 }
@@ -34,6 +37,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	utils.RenderHtml("/admin/main.html", w, r)
 }
 
+/*
+模板页暂时以 class.model_fn 分级
+*/
 func templateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	temp := fmt.Sprintf("/admin/%s/%s_%s.html", c.URLParams["class"], c.URLParams["model"], c.URLParams["fn"])
 	utils.RenderHtml(temp, w, r)

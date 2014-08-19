@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -18,7 +20,7 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Error(w, "page not found.", 404)
+	http.Error(w, fmt.Sprintf("%s page not found.", r.URL.Path), 404)
 }
 
 func RenderHtml(path string, w http.ResponseWriter, r *http.Request) {
@@ -27,5 +29,24 @@ func RenderHtml(path string, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+	w.Write(buf)
+}
+
+func RenderPage(v interface{}, w http.ResponseWriter, r *http.Request) {
+	type Page struct {
+		Status  int         `json:"status"`
+		Data    interface{} `json:"data"`
+		total   int
+		hasNext bool
+		size    int
+		page    int
+	}
+	page := Page{
+		Status: 1,
+		Data:   v,
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	buf, _ := json.Marshal(page)
 	w.Write(buf)
 }
