@@ -3,6 +3,8 @@ package models
 import (
 	//"github.com/smtc//utils"
 	"time"
+
+	"github.com/smtc/JustCms/database"
 )
 
 // 账号管理
@@ -67,7 +69,11 @@ func AccountGet(id int64) (Account, error) {
 }
 
 func AccountList(page, size int, filter map[string]interface{}) ([]Account, error) {
-	return []Account{}, nil
+	db := database.GetDB(account_db)
+	var accts []Account
+
+	err := db.Offset(page * size).Limit(size).Find(&accts).Error
+	return accts, err
 }
 
 func AccountDelete(id int64) error {

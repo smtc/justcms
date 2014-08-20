@@ -5,25 +5,25 @@
         "icon": "user",
         "children": [
             {
-                "id": "account.user.list",
+                "id": "account.list",
                 "text": "用户管理",
                 "children": [
                     {
-                        "id": "account.user.roles",
+                        "id": "account.roles",
                         "text": "角色编辑"
                     }
                 ]
             },
             {
-                "id": "account.role.list",
+                "id": "role.list",
                 "text": "角色管理",
                 "children": [
                     {
-                        "id": "account.role.edit",
+                        "id": "role.edit",
                         "text": "编辑"
                     },
                     {
-                        "id": "account.role.delete",
+                        "id": "role.delete",
                         "text": "删除"
                     }
                 ]

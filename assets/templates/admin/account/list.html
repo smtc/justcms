@@ -1,16 +1,17 @@
-<div src="account/user/" v-component="page">
+<div src="account/" routeChange="true" v-component="page">
     <div class="page-header">
         <h3>账户管理 <small><i class="icon icon-angle-double-right"></i> 用户列表</small></h3>
         <div class="buttons btn-group">
+            <a class="btn btn-success" v-href="account.edit#0"><i class="icon icon-plus"></i> 新建</a>
             <a class="btn btn-default" ><i class="icon icon-refresh"></i> 刷新</a>
         </div>
     </div>
     <div class="page-content scrollable">
-        <form class="form-inline">
-            <label class="form-group"><input class="form-control" placeholder="Email" ng-model="filters.email" /></label>
-            <label class="form-group"><input class="form-control" placeholder="用户名" ng-model="filters.name" /></label>
+        <form class="form-inline form-search" v-on="submit:search">
+            <label class="form-group"><input class="form-control" placeholder="Email" v-model="filters.email" /></label>
+            <label class="form-group"><input class="form-control" placeholder="用户名" v-model="filters.name" /></label>
             <label class="form-group"><button class="btn btn-primary">确定</button></label>
-            <label class="form-group"><button ng-click="filters={}" class="btn btn-default">重置</button></label>
+            <label class="form-group"><button v-on="click:filters={}" class="btn btn-default">重置</button></label>
         </form>
         <table class="table table-listed">
             <thead>

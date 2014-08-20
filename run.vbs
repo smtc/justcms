@@ -1,2 +1,2 @@
 Set ws = CreateObject("Wscript.Shell")
-ws.run "cmd /c main.exe",vbhide
+ws.run "cmd /c JustCms.exe",vbhide

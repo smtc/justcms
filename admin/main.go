@@ -24,10 +24,10 @@ func AdminMux() *web.Mux {
 	mux.Get(ADMIN_ROUTE, indexHandler)
 	mux.Get(ADMIN_ROUTE+"menu", menuHandler)
 
-	mux.Get(regexp.MustCompile(`^/admin/(?P<class>.+)\.(?P<model>.+)\.(?P<fn>.+)$`), templateHandler)
+	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+)$`), templateHandler)
 
-	// 这里有点乱，待重新规划
-	mux.Get(ADMIN_ROUTE+"account/user/", AccountList)
+	mux.Get(ADMIN_ROUTE+"account/", AccountList)
+	mux.Get(ADMIN_ROUTE+"account/:id", AccountEntity)
 
 	mux.NotFound(utils.NotFound)
 	return mux
@@ -38,10 +38,10 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 /*
-模板页暂时以 class.model_fn 分级
+模板页暂时以 model.fn 分级
 */
 func templateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	temp := fmt.Sprintf("/admin/%s/%s_%s.html", c.URLParams["class"], c.URLParams["model"], c.URLParams["fn"])
+	temp := fmt.Sprintf("/admin/%s/%s.html", c.URLParams["model"], c.URLParams["fn"])
 	utils.RenderHtml(temp, w, r)
 }
 

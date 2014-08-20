@@ -1,5 +1,5 @@
-tasklist|find /i "main.exe" || goto lock
-taskkill /f /t /im main.exe
+tasklist|find /i "JustCms.exe" || goto lock
+taskkill /f /t /im JustCms.exe
 :lock
-go build main.go
+go build
 start /b run.vbs

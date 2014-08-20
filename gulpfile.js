@@ -44,26 +44,3 @@ gulp.task('watch', function () {
     //gulp.watch(['test/**/*.*'], ['test'])
 })
 
-/*
-gulp.task('lint',function() {
-    return gulp.src(paths.scripts)
-        .pipe(jshint())
-        .pipe(jshint.reporter('default'));
-})
-
-/*
-gulp.task('test', function() {
-    return gulp.src('test/index.html')
-        .pipe(mochaPhantomJS())
-})
-gulp.task('test', shell.task([
-   'mocha-phantomjs -s localToRemoteUrlAccessEnabled=true -s webSecurityEnabled=false http://localhost:8000/test/index.html'             
-]))
-gulp.task('test', function() {
-    server.listen(serverPort)
-    return gulp.src('')
-        .pipe(shell('mocha-phantomjs -s localToRemoteUrlAccessEnabled=true -s webSecurityEnabled=false http://localhost:5000/test/index.html'))
-})
-*/
-
-
