@@ -1,9 +1,6 @@
 package utils
 
-import (
-	"fmt"
-	"testing"
-)
+import "testing"
 
 type TestJsonModel struct {
 	Name     string
@@ -53,5 +50,5 @@ func TestToJson(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	fmt.Println(s)
+	//fmt.Println(s)
 }
