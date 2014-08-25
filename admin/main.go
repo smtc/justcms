@@ -24,10 +24,10 @@ func AdminMux() *web.Mux {
 	mux.Get(ADMIN_ROUTE, indexHandler)
 	mux.Get(ADMIN_ROUTE+"menu", menuHandler)
 
-	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+)$`), templateHandler)
-
 	mux.Get(ADMIN_ROUTE+"account/", AccountList)
 	mux.Get(ADMIN_ROUTE+"account/:id", AccountEntity)
+
+	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+)$`), templateHandler)
 
 	mux.NotFound(utils.NotFound)
 	return mux

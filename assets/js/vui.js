@@ -6053,23 +6053,30 @@ var Vue             = require('vue'),
     route           = require('./route'),
 	utils           = require('./utils'),
     openbox         = require('./components/openbox'),
+    loading         = require('./components/loading'),
     message         = require('./components/message'),
+    tree            = require('./components/tree'),
     $data           = {},
     initialized     = false,
     vm
 
+// register prototype
 require('./prototype')
 
 var components = {
     'date': require('./components/date'),
     'form': require('./components/form'),
     'form-control': require('./components/form-control'),
+    'loading': loading.component,
     'message': message.component,
     'option': require('./components/option'),
     'page': require('./components/page'),
     'pagination': require('./components/pagination'),
     'scope': require('./components/scope'),
-    'select': require('./components/select')
+    'select': require('./components/select'),
+    'tree': tree.tree,
+    'tree-folder': tree.folder,
+    'tree-file': tree.file
 }
 
 function init() {
@@ -6110,6 +6117,7 @@ module.exports = {
     route: route,
     $data: $data,
     location: _location,
+    loading: loading,
     message: message,
     openbox: openbox,
     init: init,
@@ -7845,10 +7853,11 @@ module.exports = {
 
 });
 require.register("vui/src/components/form.js", function(exports, require, module){
-var utils = require('../utils'),
-    request = require('../request'),
-    location = require('../location'),
-    message = require('./message')
+var utils       = require('../utils'),
+    request     = require('../request'),
+    location    = require('../location'),
+    loading     = require('./loading'),
+    message     = require('./message')
 
 module.exports = {
     methods: {
@@ -7881,14 +7890,21 @@ module.exports = {
                 this.valid = this.valid && v
             }.bind(this))
 
-            if (this.valid)
+            if (this.valid) {
+                loading.start()
                 request.post(this.src).send(this.model).end(function (res) {
-                    if (res.body.status === 1) {
-                        this.success(res.body)
+                    loading.end()
+                    if (res.status === 200) {
+                        if (res.body.status === 1) {
+                            this.success(res.body)
+                        } else {
+                            message.error(res.body.error)
+                        }
                     } else {
-                        message.error(res.body.error)
+                        message.error('', res.status)
                     }
                 }.bind(this))
+            }
         }.bind(this))
 
     },
@@ -7898,7 +7914,7 @@ module.exports = {
             search = node.search,
             hash = node.hash
         request.get(this.src + hash).query(search).end(function (res) {
-            if (res.status != 200) {
+            if (res.status === 200) {
                 if (res.body.status === 1)
                     this.model = res.body.data
                 else if (res.body.errors)
@@ -7935,6 +7951,7 @@ var TEMPLATES = {
         'checkbox': '<div type="checkbox" v-component="option" name="{{_name}}" v-with="value:value" inline="{{_inline}}" src="{{_src}}" options="{{_options}}"></div>',
         'textarea': '<textarea class="form-control col-sm-{{_col[1]}}" v-attr="readonly:_readonly" name="{{_name}}" v-model="value" rows="{{_rows}}"></textarea>',
         'select': '<div class="form-control select col-sm-{{_col[1]}}" src="{{_src}}" v-with="value:value" v-component="select"></div>',
+        'tree': '<ul v-with="value:value" selectable="{{_selectable}}" select="{{_select}}" src="{{_src}}" v-component="tree"></ul>',
         'date': '<div class="form-control date col-sm-{{_col[1]}}" v-component="date" v-with="date:value" id="{{id}}" name="{{_name}}"></div>',
         'integer': '<input class="form-control col-sm-{{_col[1]}}" v-attr="readonly:_readonly" id="{{id}}" v-model="value" name="{{_name}}" type="text" />',
         'alpha': '<input class="form-control col-sm-{{_col[1]}}" v-attr="readonly:_readonly" id="{{id}}" v-model="value" name="{{_name}}" type="text" />',
@@ -8121,7 +8138,7 @@ module.exports = {
         this.checkList = []
 
         // set attr
-        utils.forEach(['label', 'src', 'text', 'name', 'rows', 'readonly', 'options', 'inline', 'tip'], function (attr) {
+        utils.forEach(['label', 'src', 'text', 'name', 'rows', 'readonly', 'options', 'inline', 'tip', 'selectable', 'select'], function (attr) {
             this['_' + attr] = this.$el.getAttribute(attr)
             this.$el.removeAttribute(attr)
         }.bind(this))
@@ -8167,15 +8184,61 @@ module.exports = {
 }
 
 });
+require.register("vui/src/components/loading.js", function(exports, require, module){
+var utils   = require('../utils'),
+    handle  = { status: 0 }
+
+var component = {
+    template:   '<div v-show="handle.status > 0" class="loading">' +
+                    '<div class="overlay"></div>' +
+                    '<label><img v-show="img" v-attr="src:img" />{{text}}</label>' +
+                '</div>',
+
+    replace: true,
+
+    data: {
+        handle: handle,
+        img: '',
+        text: ''
+    },
+
+    created: function () {
+        this.img = this.$el.getAttribute('img')
+        this.text = this.$el.getAttribute('text')
+    }
+
+}
+
+module.exports = {
+    start: function () {
+        handle.status++
+    },
+
+    end: function () {
+        handle.status--
+    },
+
+    component: component
+}
+
+});
 require.register("vui/src/components/message.js", function(exports, require, module){
 /* 
  * message { text: '', type: '' }
  */
 var utils       = require('../utils'),
-    messages    = []
+    messages    = [],
+    httpStatus  = {
+        404: '请求的地址不存在',
+        500: '内部服务器错误'
+    }
 
 var component = {
-    template: require('./message.html'),
+    template:   '<div v-repeat="messages" class="alert alert-{{type}}">' +
+                    '<strong>{{time}}</strong><br />' +
+                    '{{text}}' +
+                    '<button v-on="click: remove(this)" class="close">&times;</button>' +
+                '</div>',
 
     data: {
         messages: messages
@@ -8194,7 +8257,7 @@ module.exports = {
             msg = {
                 text: msg,
                 type: type || 'warning',
-                time: new Date().format('yyyy-MM-dd hh-mm-ss')
+                time: new Date().format('yyyy-MM-dd hh:mm:ss')
             }
         }
         messages.push(msg)
@@ -8210,7 +8273,9 @@ module.exports = {
         this.push(msg, 'success')
     },
     
-    error: function (msg) {
+    error: function (msg, status) {
+        if (!msg && status)
+            msg = httpStatus[status]
         this.push(msg, 'danger')
     },
     
@@ -8433,6 +8498,7 @@ var request   = require('../request'),
     _location = require('../location'),
     route     = require('../route'),
     message   = require('./message'),
+    loading   = require('./loading'),
     forEach   = utils.forEach,
     basepath  = _location.node(true).pathname
 
@@ -8479,10 +8545,12 @@ module.exports = {
             if (this.routeChange && this.routeChange === 'true')
                 _location.search(search.obj)
 
+            loading.start()
             request.get(url)
                 .end(function (res) {
+                    loading.end()
                     if (res.status != 200) {
-                        message.push(res.text)
+                        message.error('', res.status)
                         return
                     }
                     self.data = res.body.data
@@ -8491,9 +8559,11 @@ module.exports = {
         },
 
         updateModel: function (item) {
+            loading.start()
             request.put(this.src).send(item.$data).end(function (res) {
+                loading.end()
                 if (res.status != 200) {
-                    message.error(res.text)
+                    message.error('', res.status)
                     return
                 }
                 if (res.body.status === 1)
@@ -8504,9 +8574,11 @@ module.exports = {
         },
 
         del: function (data) {
+            loading.start()
             request.del(this.src).send(data).end(function (res) {
+                loading.end()
                 if (res.status != 200) {
-                    message.error(res.text)
+                    message.error('', res.status)
                     return
                 }
                 if (res.body.status === 1)
@@ -8602,16 +8674,21 @@ module.exports = {
     created: function () {
         this.init()
         if (!this.delay) this.update()
+
+        var form = this.$el.querySelector('form')
+        if (form) {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault()
+            })
+        }
     },
     ready: function () {
-        this.$watch('pager', this.update)
+        //this.$watch('pager.page', this.update)
         if (this.routeChange)
-            //route.bind([routeChange, this])
             route.bind(routeChange.bind(this))
     },
     beforeDestroy: function () {
         if (this.routeChange)
-            //route.unbind([routeChange, this])
             route.unbind(routeChange.bind(this))
     }
 }
@@ -8637,6 +8714,8 @@ module.exports = {
         change: function (page) {
             this.page = page
             this.compose()
+            if (this.$parent && this.$parent.update)
+                this.$parent.update()
         }
     },
     data: {
@@ -8741,6 +8820,177 @@ module.exports = {
 }
 
 });
+require.register("vui/src/components/tree.js", function(exports, require, module){
+var request = require('../request'),
+    message = require('./message'),
+    utils   = require('../utils')
+
+var index = 1
+function getUid() {
+    return index++
+}
+
+function hasChildren(node) {
+    return node.children && node.children.length > 0
+}
+
+function initData(data, list, p) {
+    list = list || {}
+    utils.forEach(data, function (d, i) {
+        d.id = d.id || getUid()
+        d.$parent = p
+        if (d.children && d.children.length > 0) {
+            d.$type = 'folder'
+            d.children = initData(d.children, list, d.id)
+        } else {
+            d.$type = 'file'
+        }
+        list[d.id] = d
+        d.vui_status = 0
+    })
+    return data
+}
+
+function initValue(list, values, k) {
+    values = values || []
+    if (typeof values === 'string')
+        values = values.split(',')
+
+    utils.forEach(list, function (d) {
+        if (!hasChildren(d) && values.indexOf(d[k]) >= 0) {
+            d.vui_status = 2
+            setParent(d.$parent, list)
+        }
+    })
+}
+
+function setStatus(node, status) {
+    node.vui_status = status
+    utils.forEach(node.children, function (d, i) {
+        setStatus(d, status)
+    })
+}
+
+function setParent(p, list) {
+    if (p === undefined) return
+    var node = list[p]
+    var status = 0
+    utils.forEach(node.children, function (d) {
+        status += d.vui_status
+    })
+    if (status === 0) {
+        node.vui_status = 0
+    } else if (status === (node.children.length * 2)) {
+        node.vui_status = 2
+    } else {
+        node.vui_status = 1
+    }
+    setParent(node.$parent, list)
+}
+
+var tree = {
+    template: '<ul class="treeview list-unstyled"><li v-repeat="node:data" v-with="list:list, current:current" v-component="tree-{{node.$type}}"></li></ul>',
+
+    replace: true,
+
+    paramAttributes: ['src', 'select', 'selectable'],
+    
+    data: {
+        data: [],
+        selectable: false,
+        current: null
+    },
+
+    methods: {
+        getSelected: function (k, full) {
+            var status = full ? 1 : 0
+            var str = []
+            utils.forEach(this.list, function (node) {
+                if (node.vui_status > status)
+                    str.push(node[k])
+            })
+            return str.join(',')
+        }
+    },
+
+    created: function () {
+        var self = this
+        this.data = []
+        this.list = {}
+        this.selectable = this.selectable === 'true'
+        this.value = ''
+        this.select = this.select || 'id'
+        if (this.src) {
+            request.get(this.src).end(function (res) {
+                if (res.status !== 200) {
+                    message.error(null, res.status)
+                    return
+                }
+                if (res.body.status == 1) {
+                    self.data = initData(res.body.data, self.list)
+                    initValue(self.list, self.value, self.select)
+                } else {
+                    message.error(res.body.errors)
+                }
+            })
+        }
+
+        this.$watch('data', function () {
+            this.value = this.getSelected(this.select)
+        }.bind(this))
+    }
+}
+
+var folder = {
+    template:   '<label v-class="active:current==node">\
+                    <i class="icon" v-class="icon-minus-square-o:open, icon-plus-square-o:!open" v-on="click:open=!open"></i>\
+                    <i v-show="selectable" class="icon" v-on="click:select(node)" v-class="icon-square-o:node.vui_status==0,icon-check-square:node.vui_status==2,icon-check-square-o:node.vui_status==1"></i>\
+                    <i class="icon icon-folder-o" v-class="icon-folder-open-o: open"></i>\
+                    <span v-on="click:current=node">{{node.text}}</span>\
+                </label>\
+                <ul class="list-unstyled" v-show="open">\
+                    <li v-repeat="node:node.children" v-with="list:list, current:current" v-component="tree-{{node.$type}}"></li>\
+                </ul>',
+
+    data: {
+        open: false,
+        list: {}
+    },
+
+    methods: {
+        select: function (node) {
+            var status = node.vui_status < 2 ? 2 : 0
+            setStatus(node, status)
+            setParent(node.$parent, this.list)
+        }
+    }
+}
+
+var file = {
+    template:   '<label v-class="active:current==node">\
+                    <i class="icon icon-file-o"></i>\
+                    <i v-show="selectable" v-on="click:select(node)" class="icon icon-square-o" v-class="icon-check-square: node.vui_status==2"></i>\
+                    <span v-on="click:current=node">{{node.text}}</span>\
+                </label>',
+
+    data: {},
+
+    methods: {
+        select: function (node) {
+            var status = node.vui_status < 2 ? 2 : 0
+            setStatus(node, status)
+            setParent(node.$parent, this.list)
+        }
+    }
+}
+
+module.exports = {
+    tree:   tree,
+    folder: folder,
+    file:   file
+}
+
+});
 
 
 
@@ -8752,9 +9002,6 @@ module.exports = '<div v-on="click:open()">\n    <span class="date-text" v-text=
 });
 require.register("vui/src/components/form-control.html", function(exports, require, module){
 module.exports = '<div v-class="has-error:!valid" class="form-group">\n    <label for="{{id}}" class="col-sm-{{_col[0]}} control-label">{{_label}}</label>\n    <div v-if="_type!==\'empty\'" class="col-sm-{{12-_col[0]}}" v-html="_content"></div>\n    <div v-if="_type===\'empty\'" class="col-sm-{{12-_col[0]}}"><content></content></div>\n</div>\n';
-});
-require.register("vui/src/components/message.html", function(exports, require, module){
-module.exports = '<div v-repeat="messages" class="alert alert-{{type}}">\n    <strong>{{time}}</strong><br />\n    {{text}}\n    <button v-on="click: remove(this)" class="close">&times;</button>\n</div>\n';
 });
 require.register("vui/src/components/openbox.html", function(exports, require, module){
 module.exports = '<div class="openbox">\n    <div class="openbox-backdrop"></div>\n    <div class="openbox-inner" v-on="click:bgclose">\n        <div class="openbox-content">\n            <a href="script:;" class="close" v-on="click:close(false)">&times;</a>\n            <div class="openbox-header" v-if="title">\n                <h3 v-text="title"></h3>\n            </div>\n            <div class="openbox-body" v-view="content" v-with="src:src, model:model"></div>\n            <div class="openbox-footer">\n                <button type="button" class="btn btn-{{type}}" v-text="text" v-on="click:fn()" v-repeat="btns"></button>\n            </div>\n        </div>\n    </div>\n</div>\n\n';
