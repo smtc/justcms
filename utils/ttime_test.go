@@ -14,12 +14,12 @@ func TestTTime(t *testing.T) {
 	tm := TTime{time.Now(), ""}
 
 	func() {
-		s, _ := tm.MarshalJson()
-		println(string(s))
+		//s, _ := tm.MarshalJson()
+		//println(string(s))
 	}()
 
-	//user := User{Birthday: tm}
-	s, err := json.Marshal(tm)
+	user := User{Birthday: tm}
+	s, err := json.Marshal(user)
 	if err == nil {
 		println(string(s))
 	}
