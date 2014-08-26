@@ -14,7 +14,7 @@ func TestToMap(t *testing.T) {
 		TestMapModel{Name: "test2", Age: 19},
 	}
 
-	for i := 0; i < 10000; i++ {
-		ToMapList(list, []string{"Name"}, FilterModeInclude)
-	}
+	//for i := 0; i < 10000; i++ {
+	ToMapList(list, []string{"Name"}, FilterModeInclude)
+	//}
 }

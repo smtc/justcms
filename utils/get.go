@@ -1,6 +1,16 @@
+/*
+* get value from struct or map by string key
+* if key does not exist, return given default value
+ */
+
 package utils
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+	"strconv"
+	"time"
+)
 
 func GetValue(v interface{}, key string) reflect.Value {
 	fv := reflect.ValueOf(v)
@@ -17,16 +27,99 @@ func GetValue(v interface{}, key string) reflect.Value {
 	return fv
 }
 
-func GetInt(v interface{}, key string, def int) int {
-	if !GetValue(v, key).IsValid() {
+func GetInterface(v interface{}, key string, def interface{}) interface{} {
+	val := GetValue(v, key)
+	if !val.IsValid() {
 		return def
 	}
 
-	i := GetValue(v, key).Interface().(int)
-	/*
-		if i, ok := GetValue(v, key).Interface().(int); ok {
+	return val.Interface()
+}
+
+func GetInt(v interface{}, key string, def int) int {
+	itf := GetInterface(v, key, def)
+	if i, ok := itf.(int); ok {
+		return i
+	}
+	if s, ok := itf.(string); ok {
+		if i, err := strconv.Atoi(s); err == nil {
 			return i
 		}
-	*/
-	return i
+	}
+	return def
+}
+
+func GetFloat64(v interface{}, key string, def float64) float64 {
+	itf := GetInterface(v, key, def)
+	if f, ok := itf.(float64); ok {
+		return f
+	}
+	if s, ok := itf.(string); ok {
+		if f, err := strconv.ParseFloat(s, 64); err == nil {
+			return f
+		}
+	}
+	return def
+}
+
+func GetFloat32(v interface{}, key string, def float32) float32 {
+	f := GetFloat64(v, key, float64(def))
+	return float32(f)
+}
+
+func GetString(v interface{}, key string, def string) string {
+	itf := GetInterface(v, key, def)
+	if s, ok := itf.(string); ok {
+		return s
+	}
+	if t, ok := itf.(time.Time); ok {
+		return t.Format(TIMEFORMAT)
+	}
+
+	return fmt.Sprintf("%v", itf)
+}
+
+func GetTime(v interface{}, key string, def time.Time, fmt string) time.Time {
+	itf := GetInterface(v, key, def)
+	if t, ok := itf.(time.Time); ok {
+		return t
+	}
+
+	if s, ok := itf.(string); ok {
+		if t, err := time.Parse(fmt, s); err == nil {
+			return t
+		}
+	}
+
+	return def
+}
+
+func GetBool(v interface{}, key string, def bool) bool {
+	itf := GetInterface(v, key, def)
+	if b, ok := itf.(bool); ok {
+		return b
+	}
+	if i, ok := itf.(int); ok {
+		return i > 0
+	}
+	if s, ok := itf.(string); ok {
+		if b, err := strconv.ParseBool(s); err == nil {
+			return b
+		}
+	}
+
+	return def
+}
+
+func GetBytes(v interface{}, key string, def []byte) []byte {
+	itf := GetInterface(v, key, def)
+	if b, ok := itf.([]byte); ok {
+		return b
+	}
+
+	if s, ok := itf.(string); ok {
+		return []byte(s)
+	}
+
+	return def
 }
