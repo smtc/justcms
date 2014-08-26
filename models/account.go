@@ -1,7 +1,6 @@
 package models
 
 import (
-	//"github.com/smtc//utils"
 	"time"
 
 	"github.com/smtc/JustCms/database"
@@ -58,16 +57,17 @@ type AccountMeta struct {
 	//Meta   utils.SQLGenericMap `sql:"type:text"`
 }
 
-var (
-	account_db = ""
-)
-
 func AccountSave(acct *Account) error {
-	return nil
+	db := database.GetDB(account_db)
+	err := db.Save(acct).Error
+	return err
 }
 
-func AccountGet(id int64) (Account, error) {
-	return Account{}, nil
+func AccountGet(id int64) (*Account, error) {
+	db := database.GetDB(account_db)
+	acct := &Account{Id: id}
+	err := db.First(acct).Error
+	return acct, err
 }
 
 func AccountList(page, size int, filter map[string]interface{}) ([]Account, error) {
@@ -79,5 +79,7 @@ func AccountList(page, size int, filter map[string]interface{}) ([]Account, erro
 }
 
 func AccountDelete(id int64) error {
-	return nil
+	db := database.GetDB(account_db)
+	acct := &Account{Id: id}
+	return db.Delete(acct).Error
 }
