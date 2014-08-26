@@ -29,6 +29,6 @@ func (t TTime) MarshalJSON() ([]byte, error) {
 }
 
 func (t *TTime) UnmarshalJSON(data []byte) (err error) {
-	t.Time, err = time.Parse(TIMEFORMAT, string(data))
+	t.Time, err = time.Parse(`"`+TIMEFORMAT+`"`, string(data))
 	return
 }

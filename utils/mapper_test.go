@@ -21,11 +21,9 @@ func TestToMap(t *testing.T) {
 	if m, err := ToMapList(list, []string{}, FilterModeExclude); err != nil {
 		t.Fatal(err.Error())
 	} else {
-		s, err := ToJson(m, []string{}, FilterModeExclude)
+		_, err := ToJson(m, []string{}, FilterModeExclude)
 		if err != nil {
 			t.Fatal(err.Error())
 		}
-
-		println(s)
 	}
 }
