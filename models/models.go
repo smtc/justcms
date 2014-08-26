@@ -10,8 +10,8 @@ func InitDB() {
 	db.AutoMigrate(Post{})
 	db.AutoMigrate(PostMeta{})
 
-	db.AutoMigrate(Comment{})
-	db.AutoMigrate(CommentMeta{})
+	db.AutoMigrate(Reply{})
+	db.AutoMigrate(ReplyMeta{})
 
 	db.AutoMigrate(Link{})
 

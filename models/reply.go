@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `wp_comments` (
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=3237 ;
 */
 
-type Comment struct {
+type Reply struct {
 	Id          int64     `json:"id"`
 	ObjectId    string    `sql:"size:64" json:"object_id"`
 	PostId      int64     `json:"post_id"`
@@ -66,10 +66,10 @@ type Comment struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-type CommentMeta struct {
-	Id              int64  `json:"id"`
-	CommentId       int64  `json:"comment_id"`
-	CommentObejctId string `sql:"size:64" json:"comment_objectid"`
-	MetaKey         string `sql:"size:300" json:"meta_key"`
-	MetaValue       string `sql:"size:100000" json:"meta_value"`
+type ReplyMeta struct {
+	Id            int64  `json:"id"`
+	ReplyId       int64  `json:"reply_id"`
+	ReplyObejctId string `sql:"size:64" json:"reply_objectid"`
+	MetaKey       string `sql:"size:300" json:"meta_key"`
+	MetaValue     string `sql:"size:100000" json:"meta_value"`
 }
