@@ -1,7 +1,8 @@
 package models
 
 import (
-//"time"
+	//"time"
+	"database"
 )
 
 /*
@@ -22,8 +23,30 @@ CREATE TABLE IF NOT EXISTS `wp_options` (
 
 type Options struct {
 	Id       int64  `json:"id"`
-	BlogId   int64  `json:"blog_id"`
 	Name     string `sql:"size:64" json:"name"`
 	Value    string `sql:"size:100000" json:"value"`
 	Autoload string `sql:"size:20" json:"autoload"`
+}
+
+var defaultOptions = []struct {
+	name   string
+	defVal interface{}
+}{
+	{"template", "default"},
+}
+
+// GetOptionByName
+// params:
+//   name: option name
+//   def: if not found, the default value
+// return:
+//   opt: the option value
+//   err: error
+func GetOptionByName(name string) (opt interface{}, err error) {
+	var row Options
+
+	db := database.GetDB("")
+
+	err = db.Where("name=?", name).Limit(1).Find(&row).Error
+	return
 }
