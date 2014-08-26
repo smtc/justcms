@@ -38,3 +38,7 @@ func run() {
 
 	goji.Serve()
 }
+
+func index(w http.ResponseWriter, r *http.Request) {
+
+}
