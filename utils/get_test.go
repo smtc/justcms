@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -27,9 +28,14 @@ func TestGetValue(t *testing.T) {
 			byteVal []byte
 		)
 
-		if intVal = GetValue(v, "Age").Interface().(int); intVal != 1 {
-			t.Fatal(fmt.Sprintf("Age should be 1, not %v", intVal))
-		}
+		/*
+			if intVal = GetValue(v, "Age").Interface().(int); intVal != 1 {
+				t.Fatal(fmt.Sprintf("Age should be 1, not %v", intVal))
+			}
+			if strVal = GetValue(v, "StrAge").Interface().(string); strVal != "100" {
+				t.Fatal(fmt.Sprintf("StrAge should be '100', not %v", strVal))
+			}
+		*/
 
 		if intVal = GetInt(v, "Age", 0); intVal != 1 {
 			t.Fatal(fmt.Sprintf("Age should be 1, not %v", intVal))
@@ -41,10 +47,6 @@ func TestGetValue(t *testing.T) {
 
 		if intVal = GetInt(v, "StrAge", 0); intVal != 100 {
 			t.Fatal(fmt.Sprintf("StrAge should be 100, not %v", intVal))
-		}
-
-		if strVal = GetValue(v, "StrAge").Interface().(string); strVal != "100" {
-			t.Fatal(fmt.Sprintf("StrAge should be '100', not %v", strVal))
 		}
 
 		if strVal = GetString(v, "StrAge", ""); strVal != "100" {
@@ -167,4 +169,20 @@ func TestGetValue(t *testing.T) {
 	}
 
 	test(m)
+
+	// ========================================================
+	v := url.Values{}
+	v.Set("Age", "1")
+	v.Set("StrAge", "100")
+	v.Set("Birthday", "2012-03-04 05:06:07")
+	v.Set("StrBirthday", "2012-03-04 05:06:07")
+	v.Set("Money", "123.45")
+	v.Set("StrMoney", "678.90")
+	v.Set("Active", "true")
+	v.Set("StrActive", "TRUE")
+	v.Set("Keys", "123456")
+	v.Set("StrKeys", "123456")
+
+	test(v)
+
 }
