@@ -39,7 +39,8 @@ gulp.task('less', function () {
 
 gulp.task('watch', function () {
     //server.listen(serverPort)
-    gulp.watch(['**/*.go'], ['go-run'])
+    //gulp.watch(['**/*.go'], ['go-run'])
+    gulp.watch(['*.exe'], ['go-run'])
     gulp.watch(['assets/css/**/*.less'], ['less'])
     //gulp.watch(['test/**/*.*'], ['test'])
 })

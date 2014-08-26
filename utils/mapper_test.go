@@ -1,20 +1,31 @@
 package utils
 
-import "testing"
-
-type TestMapModel struct {
-	Name     string
-	Age      int
-	Password string
-}
+import (
+	"testing"
+	"time"
+)
 
 func TestToMap(t *testing.T) {
-	list := []TestMapModel{
-		TestMapModel{Name: "test1", Age: 18},
-		TestMapModel{Name: "test2", Age: 19},
+	type TestMapModel struct {
+		Name     string
+		Age      int
+		Password string
+		Birthday TTime
 	}
 
-	//for i := 0; i < 10000; i++ {
-	ToMapList(list, []string{"Name"}, FilterModeInclude)
-	//}
+	list := []TestMapModel{
+		TestMapModel{Name: "test1", Age: 18},
+		TestMapModel{Name: "test2", Age: 19, Birthday: TTime{time.Now(), ""}},
+	}
+
+	if m, err := ToMapList(list, []string{}, FilterModeExclude); err != nil {
+		t.Fatal(err.Error())
+	} else {
+		s, err := ToJson(m, []string{}, FilterModeExclude)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
+		println(s)
+	}
 }
