@@ -5,30 +5,34 @@ import (
 	"time"
 )
 
-type TTime struct {
+type Time struct {
 	time.Time
 	f string
 }
 
-func (t TTime) format() string {
+func (t Time) format() string {
 	if t.f == "" {
 		t.f = TIMEFORMAT
 	}
 	return t.Time.Format(t.f)
 }
 
-func (t TTime) MarshalText() ([]byte, error) {
+func (t Time) MarshalText() ([]byte, error) {
 	return []byte(t.format()), nil
 }
 
-func (t TTime) MarshalJSON() ([]byte, error) {
+func (t Time) MarshalJSON() ([]byte, error) {
 	if y := t.Year(); y < 0 || y >= 10000 {
-		return nil, errors.New("TTime.MarshalJson: year outside of range [0,9999]")
+		return nil, errors.New("Time.MarshalJson: year outside of range [0,9999]")
 	}
 	return []byte(`"` + t.format() + `"`), nil
 }
 
-func (t *TTime) UnmarshalJSON(data []byte) (err error) {
+func (t *Time) UnmarshalJSON(data []byte) (err error) {
 	t.Time, err = time.Parse(`"`+TIMEFORMAT+`"`, string(data))
 	return
+}
+
+func (t *Time) SetFormat(s string) {
+	t.f = s
 }

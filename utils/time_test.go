@@ -7,15 +7,15 @@ import (
 	"time"
 )
 
-func TestTTime(t *testing.T) {
+func TestTime(t *testing.T) {
 	type User struct {
-		Birthday TTime
+		Birthday Time
 	}
 
 	sbd := "2010-01-01 00:00:00"
 	birthday, _ := time.Parse(TIMEFORMAT, sbd)
 
-	tm := TTime{birthday, ""}
+	tm := Time{birthday, ""}
 
 	s, err := tm.MarshalJSON()
 	if err != nil {
@@ -37,5 +37,14 @@ func TestTTime(t *testing.T) {
 	}
 	if user2.Birthday.Time != birthday {
 		t.Fatal(fmt.Sprintf("birthday should be %v, not %v", birthday, user2.Birthday))
+	}
+
+	tm.SetFormat(time.Kitchen)
+	s, err = tm.MarshalText()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if string(s) != "12:00AM" {
+		t.Fatal(fmt.Sprintf("tm should be 12:00AM, not %v", string(s)))
 	}
 }
