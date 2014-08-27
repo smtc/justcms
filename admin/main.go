@@ -11,21 +11,17 @@ import (
 	"github.com/zenazn/goji/web/middleware"
 )
 
-const (
-	ADMIN_ROUTE = "/admin/"
-)
-
 func AdminMux() *web.Mux {
 	mux := web.New()
 
 	mux.Use(middleware.Logger)
 	mux.Use(middleware.Recoverer)
 
-	mux.Get(ADMIN_ROUTE, indexHandler)
-	mux.Get(ADMIN_ROUTE+"menu", menuHandler)
+	mux.Get("/admin/", indexHandler)
+	mux.Get("/admin/menu", menuHandler)
 
-	mux.Get(ADMIN_ROUTE+"account/", AccountList)
-	mux.Get(ADMIN_ROUTE+"account/:id", AccountEntity)
+	mux.Get("/admin/account/", AccountList)
+	mux.Get("/admin/account/:id", AccountEntity)
 
 	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+)$`), templateHandler)
 
@@ -41,7 +37,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 模板页暂时以 model.fn 分级
 */
 func templateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	temp := fmt.Sprintf("/admin/%s/%s.html", c.URLParams["model"], c.URLParams["fn"])
+	temp := fmt.Sprintf("/admin/%s_%s.html", c.URLParams["model"], c.URLParams["fn"])
 	utils.RenderHtml(temp, w, r)
 }
 

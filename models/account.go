@@ -57,9 +57,9 @@ type AccountMeta struct {
 	//Meta   utils.SQLGenericMap `sql:"type:text"`
 }
 
-func AccountSave(acct *Account) error {
+func (a *Account) Save() error {
 	db := database.GetDB(account_db)
-	err := db.Save(acct).Error
+	err := db.Save(a).Error
 	return err
 }
 
