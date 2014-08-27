@@ -10,15 +10,15 @@ type Post struct {
 	ObjectId  string    `sql:"size:64" json:"object_id"`
 	AuthorId  int64     `json:"author_id"`
 	Title     string    `sql:"size:60" json:"title"`
-	Content   string    `sql:"text" json:"content"`
+	Content   string    `sql:"size:100000" json:"content"`
 	Status    string    `sql:"size:20" json:"status"`
 	Excerpt   string    `sql:"size:500" json:"excerpt"`
 	PostAt    time.Time `json:"post_at"`
 	PublishAt time.Time `json:"publish_at"`
 	ModifyAt  time.Time `json:"modify_at"`
 
-	ReplyStatus     string `sql:"size:20;default:open" json:"reply_status"`
-	PingStatus      string `sql:"size:20;default:open" json:"ping_status"`
+	ReplyStatus     string `sql:"size:20;default:'open'" json:"reply_status"`
+	PingStatus      string `sql:"size:20;default:'open'" json:"ping_status"`
 	PostName        string `sql:"size:200" json:"post_name"`
 	PostPassword    string `sql:"size:20" json:"post_password"`
 	ToPing          string `sql:"type:text" json:"to_ping"`

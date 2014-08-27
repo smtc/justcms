@@ -78,8 +78,7 @@ func AccountList(page, size int, filter map[string]interface{}) ([]Account, erro
 	return accts, err
 }
 
-func AccountDelete(id int64) error {
+func (a *Account) Delete() error {
 	db := database.GetDB(account_db)
-	acct := &Account{Id: id}
-	return db.Delete(acct).Error
+	return db.Delete(a).Error
 }
