@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>{{title}}</title>
+</head>
+<body>
+<section>
+  {% for post in get_posts() %}
+	<div>
+		{{show_post(post)|safe}}
+	</div>
+  {% endfor %}
+</section>
+</body>
+</html>
