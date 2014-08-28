@@ -3,6 +3,7 @@ package models
 import (
 	//"time"
 	"database"
+	"fmt"
 )
 
 /*
@@ -28,11 +29,8 @@ type Options struct {
 	Autoload string `sql:"size:20" json:"autoload"`
 }
 
-var defaultOptions = []struct {
-	name   string
-	defVal interface{}
-}{
-	{"template", "default"},
+var defaultOptions = map[string]interface{}{
+	"template": "default",
 }
 
 // GetOptionByName
@@ -48,5 +46,23 @@ func GetOptionByName(name string) (opt interface{}, err error) {
 	db := database.GetDB("")
 
 	err = db.Where("name=?", name).Limit(1).Find(&row).Error
+	if err != nil {
+		opt = defaultOptions[name]
+		return
+	}
+	opt = row.Value
 	return
+}
+
+func GetStringOptions(name string) (val string, err error) {
+	opt, err := GetOptionByName(name)
+	var ok bool
+	if val, ok := opt.(string); !ok {
+		err = fmt.Errorf("Cannot convert option %s to type string", name)
+	}
+	return
+}
+
+func GetIntOption(name string) (val int, err error) {
+
 }
