@@ -39,3 +39,14 @@ type PostMeta struct {
 	MetaKey      string `sql:"size:300" json:"meta_key"`
 	MetaValue    string `sql:"size:100000" json:"meta_value"`
 }
+
+// create new post
+// param:
+//   opt: map[string]interface{}
+// return:
+//   post: *Post
+//   err: error
+func NewPost(opt map[string]interface{}) (post *Post, err error) {
+
+	return
+}
