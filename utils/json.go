@@ -28,3 +28,17 @@ func ToJson(v interface{}, keys []string, mode filterMode) (string, error) {
 	return string(obj), nil
 
 }
+
+func ToJsonOnly(v interface{}) (string, error) {
+	m, err := ToMapOnly(v)
+	if err != nil {
+		return "", err
+	}
+
+	obj, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+
+	return string(obj), nil
+}

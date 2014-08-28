@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"encoding/json"
 	"log"
 	"reflect"
+	"time"
 )
 
 type filterMode int
@@ -36,20 +36,33 @@ func filterMap(m map[string]interface{}, keys []string, mode filterMode) map[str
 }
 
 func ToMap(v interface{}, keys []string, mode filterMode) (map[string]interface{}, error) {
-	obj, err := json.Marshal(v)
-	if err != nil {
-		log.Println(err.Error())
-		return nil, err
-	}
-
 	m := make(map[string]interface{})
-	err = json.Unmarshal(obj, &m)
-	if err != nil {
-		log.Println(err.Error())
-		return nil, err
+
+	fv := reflect.ValueOf(v)
+	switch fv.Kind() {
+	case reflect.Map:
+		for _, k := range fv.MapKeys() {
+			value := replaceTime(fv.MapIndex(k).Interface())
+			m[k.String()] = value
+		}
+
+	case reflect.Struct:
+		for i := 0; i < fv.NumField(); i++ {
+			typeField := fv.Type().Field(i)
+			value := replaceTime(fv.Field(i).Interface())
+			m[typeField.Name] = value
+		}
+
 	}
 
 	return filterMap(m, keys, mode), nil
+}
+
+func replaceTime(v interface{}) interface{} {
+	if t, ok := v.(time.Time); ok {
+		return Time{t, ""}
+	}
+	return v
 }
 
 func ToMapList(v interface{}, keys []string, mode filterMode) ([]map[string]interface{}, error) {
@@ -77,4 +90,8 @@ func ToMapList(v interface{}, keys []string, mode filterMode) ([]map[string]inte
 	}
 
 	return list, nil
+}
+
+func ToMapOnly(v interface{}) (map[string]interface{}, error) {
+	return ToMap(v, []string{}, FilterModeExclude)
 }

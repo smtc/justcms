@@ -54,20 +54,21 @@ type AccountMeta struct {
 	MetaKey      string `sql:"size:300" json:"meta_key"`
 	MetaValue    string `sql:"size:100000" json:"meta_value"`
 	Plugin       string `sql:"size:180"`
-	//Meta   utils.SQLGenericMap `sql:"type:text"`
+}
+
+func (a *Account) Get(id int64) error {
+	db := database.GetDB(account_db)
+	return db.First(a, id).Error
 }
 
 func (a *Account) Save() error {
 	db := database.GetDB(account_db)
-	err := db.Save(a).Error
-	return err
+	return db.Save(a).Error
 }
 
-func AccountGet(id int64) (*Account, error) {
+func (a *Account) Delete() error {
 	db := database.GetDB(account_db)
-	acct := &Account{Id: id}
-	err := db.First(acct).Error
-	return acct, err
+	return db.Delete(a).Error
 }
 
 func AccountList(page, size int, filter map[string]interface{}) ([]Account, error) {
@@ -76,9 +77,4 @@ func AccountList(page, size int, filter map[string]interface{}) ([]Account, erro
 
 	err := db.Offset(page * size).Limit(size).Find(&accts).Error
 	return accts, err
-}
-
-func (a *Account) Delete() error {
-	db := database.GetDB(account_db)
-	return db.Delete(a).Error
 }

@@ -5,7 +5,7 @@ import "github.com/smtc/JustCms/database"
 func init() {
 	database.OpenDB("justcms_test", "root", "123456")
 
-	//dropTables()
+	dropTables()
 
 	InitDB()
 }
