@@ -55,7 +55,7 @@ type Reply struct {
 	Email       string    `sql:"size:100" json:"email"`
 	AuthorUrl   string    `sql:"size:40" json:"author"`
 	AuthorIP    string    `sql:"size:40" json:"author"`
-	Content     string    `sql:"size:60000" json:"content"`
+	Content     string    `sql:"size:100000" json:"content"`
 	Karma       int       `json:"karma"`
 	Approved    string    `sql:"size:20" json:"approved"`
 	Agent       string    `sql:"size:255" json:"agent"`

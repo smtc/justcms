@@ -2,6 +2,11 @@ package models
 
 import "github.com/smtc/JustCms/database"
 
+var (
+	account_db = ""
+	post_db    = ""
+)
+
 func InitDB() {
 	db := database.GetDB("")
 	db.AutoMigrate(Account{})

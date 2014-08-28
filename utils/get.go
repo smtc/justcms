@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -41,6 +42,9 @@ func GetInt(v interface{}, key string, def int) int {
 	if i, ok := itf.(int); ok {
 		return i
 	}
+	if ss, ok := itf.([]string); ok {
+		itf = ss[0]
+	}
 	if s, ok := itf.(string); ok {
 		if i, err := strconv.Atoi(s); err == nil {
 			return i
@@ -53,6 +57,9 @@ func GetFloat64(v interface{}, key string, def float64) float64 {
 	itf := GetInterface(v, key, def)
 	if f, ok := itf.(float64); ok {
 		return f
+	}
+	if ss, ok := itf.([]string); ok {
+		itf = ss[0]
 	}
 	if s, ok := itf.(string); ok {
 		if f, err := strconv.ParseFloat(s, 64); err == nil {
@@ -72,6 +79,9 @@ func GetString(v interface{}, key string, def string) string {
 	if s, ok := itf.(string); ok {
 		return s
 	}
+	if ss, ok := itf.([]string); ok {
+		return strings.Join(ss, ",")
+	}
 	if t, ok := itf.(time.Time); ok {
 		return t.Format(TIMEFORMAT)
 	}
@@ -84,7 +94,9 @@ func GetTime(v interface{}, key string, def time.Time, fmt string) time.Time {
 	if t, ok := itf.(time.Time); ok {
 		return t
 	}
-
+	if ss, ok := itf.([]string); ok {
+		itf = ss[0]
+	}
 	if s, ok := itf.(string); ok {
 		if t, err := time.Parse(fmt, s); err == nil {
 			return t
@@ -102,6 +114,9 @@ func GetBool(v interface{}, key string, def bool) bool {
 	if i, ok := itf.(int); ok {
 		return i > 0
 	}
+	if ss, ok := itf.([]string); ok {
+		itf = ss[0]
+	}
 	if s, ok := itf.(string); ok {
 		if b, err := strconv.ParseBool(s); err == nil {
 			return b
@@ -116,7 +131,9 @@ func GetBytes(v interface{}, key string, def []byte) []byte {
 	if b, ok := itf.([]byte); ok {
 		return b
 	}
-
+	if ss, ok := itf.([]string); ok {
+		itf = ss[0]
+	}
 	if s, ok := itf.(string); ok {
 		return []byte(s)
 	}
