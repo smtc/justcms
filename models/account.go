@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/smtc/JustCms/database"
+	"github.com/smtc/justcms/database"
 )
 
 // 账号管理

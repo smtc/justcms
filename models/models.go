@@ -1,6 +1,6 @@
 package models
 
-import "github.com/smtc/JustCms/database"
+import "github.com/smtc/justcms/database"
 
 var (
 	account_db = ""

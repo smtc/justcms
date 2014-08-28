@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/smtc/JustCms/database"
-	"github.com/smtc/JustCms/utils"
+	"github.com/smtc/justcms/database"
+	"github.com/smtc/justcms/utils"
 )
 
 func TestAccount(t *testing.T) {

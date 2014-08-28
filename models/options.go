@@ -1,7 +1,9 @@
 package models
 
 import (
-//"time"
+	//"time"
+	"fmt"
+	"github.com/smtc/justcms/database"
 )
 
 /*
@@ -22,8 +24,67 @@ CREATE TABLE IF NOT EXISTS `wp_options` (
 
 type Options struct {
 	Id       int64  `json:"id"`
-	BlogId   int64  `json:"blog_id"`
 	Name     string `sql:"size:64" json:"name"`
 	Value    string `sql:"size:100000" json:"value"`
 	Autoload string `sql:"size:20" json:"autoload"`
+}
+
+var defaultOptions = map[string]interface{}{
+	"template": "default",
+}
+
+// GetOptionByName
+// params:
+//   name: option name
+//   def: if not found, the default value
+// return:
+//   opt: the option value
+//   err: error
+func GetOptionByName(name string) (opt interface{}, err error) {
+	var row Options
+
+	db := database.GetDB("")
+
+	err = db.Where("name=?", name).Limit(1).Find(&row).Error
+	if err != nil {
+		opt = defaultOptions[name]
+		return
+	}
+	opt = row.Value
+	return
+}
+
+func GetStringOptions(name string) (val string, err error) {
+	opt, err := GetOptionByName(name)
+	var ok bool
+	if val, ok = opt.(string); !ok {
+		err = fmt.Errorf("Cannot convert option %s to type string", name)
+	}
+	return
+}
+
+func GetIntOption(name string) (val int, err error) {
+	opt, err := GetOptionByName(name)
+	var (
+		ok    bool
+		val64 int64
+	)
+	if val64, ok = opt.(int64); !ok {
+		err = fmt.Errorf("Cannot convert option %s to type string", name)
+	}
+	val = int(val64)
+	return
+
+}
+
+func GetInt64Option(name string) (val int64, err error) {
+
+	opt, err := GetOptionByName(name)
+	var (
+		ok bool
+	)
+	if val, ok = opt.(int64); !ok {
+		err = fmt.Errorf("Cannot convert option %s to type string", name)
+	}
+	return
 }
