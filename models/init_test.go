@@ -1,6 +1,6 @@
 package models
 
-import "github.com/smtc/JustCms/database"
+import "github.com/smtc/justcms/database"
 
 func init() {
 	database.OpenDB("justcms_test", "root", "123456")

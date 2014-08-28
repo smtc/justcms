@@ -3,8 +3,8 @@ package admin
 import (
 	"net/http"
 
-	"github.com/smtc/JustCms/models"
-	"github.com/smtc/JustCms/utils"
+	"github.com/smtc/justcms/models"
+	"github.com/smtc/justcms/utils"
 	"github.com/zenazn/goji/web"
 )
 

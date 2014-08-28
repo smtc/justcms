@@ -6,12 +6,12 @@ import (
 
 	"github.com/guotie/config"
 	"github.com/guotie/deferinit"
-	"github.com/smtc/JustCms/models"
-	"github.com/smtc/JustCms/utils"
+	"github.com/smtc/justcms/models"
+	"github.com/smtc/justcms/utils"
 	"github.com/zenazn/goji"
 
-	"github.com/smtc/JustCms/admin"
-	_ "github.com/smtc/JustCms/models"
+	"github.com/smtc/justcms/admin"
+	_ "github.com/smtc/justcms/models"
 )
 
 var (

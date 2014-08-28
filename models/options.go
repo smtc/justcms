@@ -2,8 +2,8 @@ package models
 
 import (
 	//"time"
-	"database"
 	"fmt"
+	"github.com/smtc/justcms/database"
 )
 
 /*
@@ -57,12 +57,34 @@ func GetOptionByName(name string) (opt interface{}, err error) {
 func GetStringOptions(name string) (val string, err error) {
 	opt, err := GetOptionByName(name)
 	var ok bool
-	if val, ok := opt.(string); !ok {
+	if val, ok = opt.(string); !ok {
 		err = fmt.Errorf("Cannot convert option %s to type string", name)
 	}
 	return
 }
 
 func GetIntOption(name string) (val int, err error) {
+	opt, err := GetOptionByName(name)
+	var (
+		ok    bool
+		val64 int64
+	)
+	if val64, ok = opt.(int64); !ok {
+		err = fmt.Errorf("Cannot convert option %s to type string", name)
+	}
+	val = int(val64)
+	return
 
+}
+
+func GetInt64Option(name string) (val int64, err error) {
+
+	opt, err := GetOptionByName(name)
+	var (
+		ok bool
+	)
+	if val, ok = opt.(int64); !ok {
+		err = fmt.Errorf("Cannot convert option %s to type string", name)
+	}
+	return
 }

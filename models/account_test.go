@@ -3,7 +3,7 @@ package models
 import (
 	"testing"
 
-	"github.com/smtc/JustCms/database"
+	"github.com/smtc/justcms/database"
 )
 
 func TestAccount(t *testing.T) {
