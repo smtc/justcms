@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/smtc/justcms/database"
-	"github.com/smtc/justcms/utils"
 )
 
 func TestAccount(t *testing.T) {
@@ -32,15 +31,18 @@ func TestAccount(t *testing.T) {
 		t.Fatal("error")
 	}
 
+	account.Id = 0
 	account.Name = "名字"
 	if err := account.Save(); err != nil {
 		t.Fatal(err.Error())
 	}
 
+	account2.Delete()
+
 	if account.Name == account2.Name {
 		t.Fatal(account.Name + "==" + account2.Name)
 	}
 
-	s, _ := utils.ToJsonOnly(account)
-	println(s)
+	AccountDelete("name='名字'")
+
 }

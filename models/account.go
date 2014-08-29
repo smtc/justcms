@@ -71,6 +71,11 @@ func (a *Account) Delete() error {
 	return db.Delete(a).Error
 }
 
+func AccountDelete(where string) {
+	db := database.GetDB(account_db)
+	db.Where(where).Delete(&Account{})
+}
+
 func AccountList(page, size int, filter map[string]interface{}) ([]Account, error) {
 	db := database.GetDB(account_db)
 	var accts []Account

@@ -26,4 +26,8 @@ func TestToMap(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 	}
+
+	for i := 0; i < 10000; i++ {
+		ToMapList(list, []string{}, FilterModeExclude)
+	}
 }
