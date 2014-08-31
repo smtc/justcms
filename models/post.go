@@ -60,10 +60,12 @@ func GetPostByObjectId(oid string) (post *Post, err error) {
 }
 
 // get posts
+// main query function for posts
 // param:
 //  opt
 // opt keys(wordpress WP_QUERY):
 //  ....
 func GetPosts(opt map[string]interface{}) (posts []*Post, err error) {
 	db := database.GetDB("")
+	return
 }

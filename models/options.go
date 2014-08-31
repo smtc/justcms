@@ -6,6 +6,9 @@ import (
 	"github.com/smtc/justcms/database"
 )
 
+// 缓存所有已经查询过的options
+var _options map[string]interface{} = make(map[string]interface{})
+
 /*
 --
 -- 表的结构 `wp_options`
@@ -42,6 +45,10 @@ var defaultOptions = map[string]interface{}{
 //   err: error
 func GetOptionByName(name string) (opt interface{}, err error) {
 	var row Options
+
+	if _options[name] != nil {
+		return _options[name], nil
+	}
 
 	db := database.GetDB("")
 
