@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/smtc/justcms/database"
 	"time"
 )
 
@@ -49,4 +50,23 @@ type PostMeta struct {
 func NewPost(opt map[string]interface{}) (post *Post, err error) {
 
 	return
+}
+
+// get post by id
+func GetPost(id int64) (post *Post, err error) {
+	db := database.GetDB("")
+	err = db.First(post, id).Error
+	return
+}
+
+// get post by objectid
+func GetPostByObjectId(oid string) (post *Post, err error) {
+	db := database.GetDB("")
+	err = db.Where("object_id=?", oid).First(post).Error
+	return
+}
+
+// get posts
+func GetPosts(opt map[string]interface{}) (posts []*Post, err error) {
+	db := database.GetDB("")
 }
