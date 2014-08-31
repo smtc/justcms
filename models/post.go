@@ -52,13 +52,6 @@ func NewPost(opt map[string]interface{}) (post *Post, err error) {
 	return
 }
 
-// get post by id
-func GetPost(id int64) (post *Post, err error) {
-	db := database.GetDB("")
-	err = db.First(post, id).Error
-	return
-}
-
 // get post by objectid
 func GetPostByObjectId(oid string) (post *Post, err error) {
 	db := database.GetDB("")
@@ -67,6 +60,10 @@ func GetPostByObjectId(oid string) (post *Post, err error) {
 }
 
 // get posts
+// param:
+//  opt
+// opt keys(wordpress WP_QUERY):
+//  ....
 func GetPosts(opt map[string]interface{}) (posts []*Post, err error) {
 	db := database.GetDB("")
 }
