@@ -1,7 +1,8 @@
 package models
 
 import (
-//"time"
+	//"time"
+	"github.com/smtc/justcms/database"
 )
 
 /*
@@ -45,13 +46,6 @@ CREATE TABLE IF NOT EXISTS `wp_term_taxonomy` (
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=245 ;
 */
 
-type Term struct {
-	Id        int64  `json:"id"`
-	Name      string `sql:"size:200" json:"name"`
-	Slug      string `sql:"size:200" json:"slug"`
-	TermGroup int    `json:"term_group"`
-}
-
 type TermRelation struct {
 	Id        int64 `json:"id"`
 	TermId    int64 `json:"term_id"`
@@ -60,9 +54,37 @@ type TermRelation struct {
 
 type TermTaxonomy struct {
 	Id          int64  `json:"id"`
-	TermId      int64  `json:"term_id"`
-	taxonomy    string `sql:"size:60" json:"taxonomy"`
+	Name        string `sql:"size:200" json:"name"`
+	Slug        string `sql:"size:200" json:"slug"`
+	TermGroup   int    `json:"term_group"`
+	Taxonomy    string `sql:"size:60" json:"taxonomy"`
 	Description string `sql:"size:100000" json:"description"`
 	Parent      int64  `json:"parent`
 	Count       int64  `json:"count"`
+}
+
+// getCatNameById
+// todo: 增加进程category缓存
+func getCatNameById(id cid) (name string, err error) {
+	var term TermTaxonomy
+
+	db := database.GetDB("")
+
+	if err = db.Where("taxonomy=category").Where("id=?", id).First(&term).Error; err != nil {
+		return
+	}
+	name = term.Name
+	return
+}
+
+func getCatNameByName(cname string) (name string, err error) {
+	var term TermTaxonomy
+
+	db := database.GetDB("")
+
+	if err = db.Where("taxonomy=category").Where("name=?", cname).First(&term).Error; err != nil {
+		return
+	}
+	name = term.Name
+	return
 }

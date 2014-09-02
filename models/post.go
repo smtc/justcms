@@ -208,7 +208,7 @@ func GetPosts(opt map[string]interface{}) (posts []*Post, err error) {
 	var post Post
 	db := database.GetDB("")
 
-	//
+	// 查询单个post
 	if opt["id"] != nil || opt["pid"] != nil || opt["page_id"] != nil || opt["post_name"] != nil {
 		var (
 			id   int64
@@ -259,11 +259,30 @@ func GetPosts(opt map[string]interface{}) (posts []*Post, err error) {
 				log.Println("param author_name type error.")
 			}
 		case "author__in":
+			if authors, ok := convertInt64Array(value); ok {
+				for idx, author := range authors {
+					if idx == 0 {
+						db = db.Where("author_id=?", author)
+					} else {
+						db = db.Or("author_id=?", author)
+					}
+				}
+			} else {
+				log.Println("param auth__in type error.")
+			}
 		case "author__not_in":
+			if authors, ok := convertInt64Array(value); ok {
+				for _, author := range authors {
+					db = db.Where("author_id <> ?", author)
+				}
+			} else {
+				log.Println("param auth__in type error.")
+			}
 
 		// Category Parameters
 		case "cat": // int
 			if cat, ok := convertInt64(value); ok {
+				catname := getCatNameById(cat)
 			} else {
 				log.Println("param cat type error.")
 			}
