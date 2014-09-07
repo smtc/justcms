@@ -65,19 +65,19 @@ type TermTaxonomy struct {
 
 // getCatNameById
 // todo: 增加进程category缓存
-func getCatNameById(id cid) (name string, err error) {
+func getCategoryIdById(cid int64) (id int64, err error) {
 	var term TermTaxonomy
 
 	db := database.GetDB("")
 
-	if err = db.Where("taxonomy=category").Where("id=?", id).First(&term).Error; err != nil {
+	if err = db.Where("taxonomy=category").Where("id=?", cid).First(&term).Error; err != nil {
 		return
 	}
-	name = term.Name
+	id = term.Id
 	return
 }
 
-func getCatNameByName(cname string) (name string, err error) {
+func getCategoryIdByName(cname string) (id int64, err error) {
 	var term TermTaxonomy
 
 	db := database.GetDB("")
@@ -85,6 +85,6 @@ func getCatNameByName(cname string) (name string, err error) {
 	if err = db.Where("taxonomy=category").Where("name=?", cname).First(&term).Error; err != nil {
 		return
 	}
-	name = term.Name
+	id = term.Id
 	return
 }

@@ -22,7 +22,7 @@ func InitDB() {
 
 	db.AutoMigrate(Options{})
 
-	db.AutoMigrate(Term{})
+	//db.AutoMigrate(Term{})
 	db.AutoMigrate(TermRelation{})
 	db.AutoMigrate(TermTaxonomy{})
 }

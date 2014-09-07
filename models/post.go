@@ -197,6 +197,10 @@ func buildWhereClause() {
 	return
 }
 
+func parseQuery(q string) (opt map[string]interface{}, err error) {
+	return
+}
+
 // get posts
 // main query function for posts
 // param:
@@ -259,7 +263,7 @@ func GetPosts(opt map[string]interface{}) (posts []*Post, err error) {
 				log.Println("param author_name type error.")
 			}
 		case "author__in":
-			if authors, ok := convertInt64Array(value); ok {
+			if authors, err := convertInt64Array(value); err == nil {
 				for idx, author := range authors {
 					if idx == 0 {
 						db = db.Where("author_id=?", author)
@@ -271,7 +275,7 @@ func GetPosts(opt map[string]interface{}) (posts []*Post, err error) {
 				log.Println("param auth__in type error.")
 			}
 		case "author__not_in":
-			if authors, ok := convertInt64Array(value); ok {
+			if authors, err := convertInt64Array(value); err == nil {
 				for _, author := range authors {
 					db = db.Where("author_id <> ?", author)
 				}
@@ -282,11 +286,26 @@ func GetPosts(opt map[string]interface{}) (posts []*Post, err error) {
 		// Category Parameters
 		case "cat": // int
 			if cat, ok := convertInt64(value); ok {
-				catname := getCatNameById(cat)
+				cid, err := getCategoryIdById(cat)
+				if err != nil {
+					log.Printf("get category by id %d failed: %s\n", cat, err.Error())
+					break
+				}
+				db = db.Where("post_type=?", cid)
 			} else {
 				log.Println("param cat type error.")
 			}
 		case "category_name":
+			if cname, ok := convertString(value); ok {
+				cid, err := getCategoryIdByName(cname)
+				if err != nil {
+					log.Printf("get category by name %s failed: %s\n", cname, err.Error())
+					break
+				}
+				db = db.Where("post_type=?", cid)
+			} else {
+				log.Println("param category_name type error.")
+			}
 		case "category__and":
 		case "category__in":
 		case "category__not_in":
@@ -372,4 +391,8 @@ func GetPosts(opt map[string]interface{}) (posts []*Post, err error) {
 
 	err = db.Find(&posts).Error
 	return
+}
+
+func mergePosts() {
+
 }
