@@ -77,12 +77,28 @@ func getCategoryIdById(cid int64) (id int64, err error) {
 	return
 }
 
+// getCategoryIdByName
+// 根据category name获取category ID
 func getCategoryIdByName(cname string) (id int64, err error) {
 	var term TermTaxonomy
 
 	db := database.GetDB("")
 
 	if err = db.Where("taxonomy=category").Where("name=?", cname).First(&term).Error; err != nil {
+		return
+	}
+	id = term.Id
+	return
+}
+
+// getTagIdByName
+// 根据tag name获取tag ID
+func getTagIdByName(tag string) (id int64, err error) {
+	var term TermTaxonomy
+
+	db := database.GetDB("")
+
+	if err = db.Where("taxonomy=tag").Where("name=?", tag).First(&term).Error; err != nil {
 		return
 	}
 	id = term.Id
