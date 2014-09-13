@@ -49,7 +49,12 @@
                         "text": "删除"
                     }
                 ]
+            },
+            {
+                "id": "table.list",
+                "text": "Table Manager"
             }
+
         ]
     }
 ]

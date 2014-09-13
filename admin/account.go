@@ -15,5 +15,4 @@ func AccountList(w http.ResponseWriter, r *http.Request) {
 }
 
 func AccountEntity(c web.C, w http.ResponseWriter, r *http.Request) {
-
 }

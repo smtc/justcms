@@ -23,6 +23,10 @@ func AdminMux() *web.Mux {
 	mux.Get("/admin/account/", AccountList)
 	mux.Get("/admin/account/:id", AccountEntity)
 
+	mux.Get("/admin/table/", TableList)
+	mux.Get("/admin/table/:id", TableEntity)
+	mux.Post("/admin/table/", TableSave)
+
 	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+)$`), templateHandler)
 
 	mux.NotFound(utils.NotFound)

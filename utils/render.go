@@ -50,3 +50,34 @@ func RenderPage(v interface{}, w http.ResponseWriter, r *http.Request) {
 	buf, _ := json.Marshal(page)
 	w.Write(buf)
 }
+
+func RenderJson(v interface{}, status int, w http.ResponseWriter) {
+	type Result struct {
+		Status int         `json:"status"`
+		Data   interface{} `json:"data"`
+	}
+	result := Result{
+		Status: status,
+		Data:   v,
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	buf, _ := json.Marshal(result)
+	w.Write(buf)
+}
+
+func RenderError(err string, w http.ResponseWriter) {
+	type Result struct {
+		Status int    `json:"status"`
+		Errors string `json:"errors"`
+	}
+	result := Result{
+		Status: 0,
+		Errors: err,
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	buf, _ := json.Marshal(result)
+	w.Write(buf)
+
+}

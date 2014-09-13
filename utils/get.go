@@ -37,20 +37,28 @@ func GetInterface(v interface{}, key string, def interface{}) interface{} {
 	return val.Interface()
 }
 
-func GetInt(v interface{}, key string, def int) int {
+func GetInt64(v interface{}, key string, def int64) int64 {
 	itf := GetInterface(v, key, def)
-	if i, ok := itf.(int); ok {
+	if i, ok := itf.(int64); ok {
 		return i
+	}
+	if i, ok := itf.(int); ok {
+		return int64(i)
 	}
 	if ss, ok := itf.([]string); ok {
 		itf = ss[0]
 	}
 	if s, ok := itf.(string); ok {
-		if i, err := strconv.Atoi(s); err == nil {
+		if i, err := strconv.ParseInt(s, 0, 64); err == nil {
 			return i
 		}
 	}
 	return def
+}
+
+func GetInt(v interface{}, key string, def int) int {
+	i := GetInt64(v, key, int64(def))
+	return int(i)
 }
 
 func GetFloat64(v interface{}, key string, def float64) float64 {
