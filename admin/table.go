@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 
@@ -35,7 +34,8 @@ func TableSave(c web.C, w http.ResponseWriter, r *http.Request) {
 		err error
 	)
 
-	if err = json.NewDecoder(r.Body).Decode(&t); err != nil {
+	//if err = json.NewDecoder(r.Body).Decode(&t); err != nil {
+	if err = utils.RequestStruct(r, &t); err != nil {
 		log.Println(err)
 		utils.RenderError(err.Error(), w)
 		return

@@ -104,7 +104,3 @@ func (t Table) MarshalJSON() ([]byte, error) {
 	j, _ := utils.ToJsonOnly(t)
 	return []byte(j), nil
 }
-
-func (t *Table) UnmarshalJSON(data []byte) (err error) {
-	return
-}

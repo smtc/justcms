@@ -41,7 +41,7 @@ func ToMap(v interface{}, keys []string, mode filterMode) (map[string]interface{
 	m := make(map[string]interface{})
 
 	fv := reflect.ValueOf(v)
-	ft := reflect.TypeOf(v)
+	//ft := reflect.TypeOf(v)
 	switch fv.Kind() {
 	case reflect.Map:
 		for _, k := range fv.MapKeys() {
@@ -53,7 +53,7 @@ func ToMap(v interface{}, keys []string, mode filterMode) (map[string]interface{
 		for i := 0; i < fv.NumField(); i++ {
 			typeField := fv.Type().Field(i)
 			value := replaceTime(fv.Field(i).Interface())
-			tag := ft.Field(i).Tag.Get("json")
+			tag := typeField.Tag.Get("json")
 			if tag == "-" {
 				continue
 			}

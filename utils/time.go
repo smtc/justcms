@@ -2,9 +2,12 @@ package utils
 
 import (
 	"errors"
+	"reflect"
 
 	"time"
 )
+
+var timeType = reflect.TypeOf(time.Time{})
 
 type Time struct {
 	time.Time
