@@ -7,7 +7,7 @@ import (
 
 func TestToMap(t *testing.T) {
 	type TestMapModel struct {
-		Name     string
+		Name     string `json:"name"`
 		Age      int
 		Password string
 		Birthday Time

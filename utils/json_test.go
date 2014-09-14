@@ -3,9 +3,10 @@ package utils
 import "testing"
 
 type TestJsonModel struct {
-	Name     string
+	Name     string `json:"name"`
 	Age      int
 	Password string
+	Ignore   string `json:"-"`
 }
 
 func TestToJson(t *testing.T) {
@@ -14,31 +15,31 @@ func TestToJson(t *testing.T) {
 		Age:  18,
 	}
 
-	parms := []string{"Name", "Age", "None"}
+	parms := []string{"name", "Age", "None"}
 
 	s, err := ToJson(m, parms, FilterModeInclude)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	if s != "{\"Age\":18,\"Name\":\"name\"}" {
-		t.Error("error")
+	if s != "{\"age\":18,\"name\":\"name\"}" {
+		t.Error(s)
 	}
 
 	s, err = ToJson(m, parms, FilterModeIncludeMust)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	if s != "{\"Age\":18,\"Name\":\"name\",\"None\":null}" {
-		t.Error("error")
+	if s != "{\"age\":18,\"name\":\"name\",\"none\":null}" {
+		t.Error(s)
 	}
 
 	s, err = ToJson(m, []string{"Password"}, FilterModeExclude)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	if s != "{\"Age\":18,\"Name\":\"name\"}" {
-		t.Error("error")
+	if s != "{\"age\":18,\"name\":\"name\"}" {
+		t.Error(s)
 	}
 
 	list := []TestJsonModel{

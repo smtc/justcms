@@ -3,6 +3,7 @@ package utils
 import (
 	"log"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,7 @@ func filterMap(m map[string]interface{}, keys []string, mode filterMode) map[str
 	}
 
 	for _, k := range keys {
+		k = strings.ToLower(k)
 		if mode == FilterModeExclude {
 			delete(temp, k)
 		} else {
@@ -39,6 +41,7 @@ func ToMap(v interface{}, keys []string, mode filterMode) (map[string]interface{
 	m := make(map[string]interface{})
 
 	fv := reflect.ValueOf(v)
+	ft := reflect.TypeOf(v)
 	switch fv.Kind() {
 	case reflect.Map:
 		for _, k := range fv.MapKeys() {
@@ -50,7 +53,14 @@ func ToMap(v interface{}, keys []string, mode filterMode) (map[string]interface{
 		for i := 0; i < fv.NumField(); i++ {
 			typeField := fv.Type().Field(i)
 			value := replaceTime(fv.Field(i).Interface())
-			m[typeField.Name] = value
+			tag := ft.Field(i).Tag.Get("json")
+			if tag == "-" {
+				continue
+			}
+			if tag == "" {
+				tag = strings.ToLower(typeField.Name)
+			}
+			m[tag] = value
 		}
 
 	}

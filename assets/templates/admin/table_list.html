@@ -25,7 +25,7 @@
             </thead>
             <tbody>
                 <tr v-repeat="data">
-                    <td></td>
+                    <td><a title="编辑" v-href="table.edit#{{id}}"><i class="icon icon-edit"></i></a></td>
                     <td>{{name}}</td>
                     <td>{{alias}}</td>
                     <td>{{des}}</td>
@@ -34,6 +34,5 @@
                 </tr>
             </tbody>
         </table>
-        {{data}}
     </div>
 </div>

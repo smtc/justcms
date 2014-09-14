@@ -6,6 +6,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/smtc/justcms/database"
+	"github.com/smtc/justcms/utils"
 )
 
 var (
@@ -14,13 +15,13 @@ var (
 )
 
 type Table struct {
-	Id        int64     `json:"id"`
-	Name      string    `sql:"size:45;not null;unique" json:"name"`
-	Alias     string    `sql:"size:45" json:"alias"`
-	Des       string    `Sql:"size:512" json:"des"`
+	Id        int64
+	Name      string    `sql:"size:45;not null;unique"`
+	Alias     string    `sql:"size:45"`
+	Des       string    `Sql:"size:512"`
 	CreatedAt time.Time `json:"created_at"`
 	EditAt    time.Time `json:"edit_at"`
-	Columns   []Column  `json:"columns"`
+	Columns   []Column
 }
 
 func getTableDB() *gorm.DB {
@@ -97,4 +98,13 @@ func (t *Table) Field(name string) Column {
 		}
 	}
 	return column
+}
+
+func (t Table) MarshalJSON() ([]byte, error) {
+	j, _ := utils.ToJsonOnly(t)
+	return []byte(j), nil
+}
+
+func (t *Table) UnmarshalJSON(data []byte) (err error) {
+	return
 }
