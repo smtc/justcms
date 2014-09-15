@@ -16,14 +16,24 @@ var (
 
 func NotFound(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(r.URL.Path, ".html") {
-		RenderHtml(r.URL.Path, w, r)
+		Render(w).RenderHtml(r.URL.Path)
 		return
 	}
 
 	http.Error(w, fmt.Sprintf("%s page not found.", r.URL.Path), 404)
 }
 
-func RenderHtml(path string, w http.ResponseWriter, r *http.Request) {
+// ==============================================================
+
+type render struct {
+	http.ResponseWriter
+}
+
+func Render(w http.ResponseWriter) *render {
+	return &render{w}
+}
+
+func (w *render) RenderHtml(path string) {
 	buf, err := ioutil.ReadFile(templatePath + path)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -32,7 +42,7 @@ func RenderHtml(path string, w http.ResponseWriter, r *http.Request) {
 	w.Write(buf)
 }
 
-func RenderPage(v interface{}, w http.ResponseWriter, r *http.Request) {
+func (w *render) RenderPage(v interface{}) {
 	type Page struct {
 		Status  int         `json:"status"`
 		Data    interface{} `json:"data"`
@@ -51,7 +61,7 @@ func RenderPage(v interface{}, w http.ResponseWriter, r *http.Request) {
 	w.Write(buf)
 }
 
-func RenderJson(v interface{}, status int, w http.ResponseWriter) {
+func (w *render) RenderJson(v interface{}, status int) {
 	type Result struct {
 		Status int         `json:"status"`
 		Data   interface{} `json:"data"`
@@ -66,7 +76,7 @@ func RenderJson(v interface{}, status int, w http.ResponseWriter) {
 	w.Write(buf)
 }
 
-func RenderError(err string, w http.ResponseWriter) {
+func (w *render) RenderError(err string) {
 	type Result struct {
 		Status int    `json:"status"`
 		Errors string `json:"errors"`
@@ -79,5 +89,4 @@ func RenderError(err string, w http.ResponseWriter) {
 
 	buf, _ := json.Marshal(result)
 	w.Write(buf)
-
 }

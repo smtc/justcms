@@ -5,8 +5,18 @@ import (
 	"net/http"
 )
 
-func RequestStruct(r *http.Request, v interface{}) error {
+type RequestStruct struct {
+	*http.Request
+	Form *GetStruct
+}
+
+func Request(r *http.Request) *RequestStruct {
+	req := RequestStruct{r, Getter(r.Form)}
+	return &req
+}
+
+func (rs *RequestStruct) FormatBody(v interface{}) error {
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(r.Body)
+	buf.ReadFrom(rs.Body)
 	return ToStruct(buf.Bytes(), v)
 }

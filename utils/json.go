@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"strings"
+	"time"
 )
 
 func ToJson(v interface{}, keys []string, mode filterMode) (string, error) {
@@ -50,6 +51,18 @@ func ToStruct(data []byte, v interface{}) error {
 		return err
 	}
 
+	var getTime = func(itf interface{}) time.Time {
+		if t, ok := itf.(time.Time); ok {
+			return t
+		}
+		if s, ok := itf.(string); ok {
+			if t, err := time.Parse(TIMEFORMAT, s); err == nil {
+				return t
+			}
+		}
+		return TIMEDEFAULT
+	}
+
 	fv := reflect.ValueOf(v).Elem()
 	var field reflect.Value
 	for i := 0; i < fv.NumField(); i++ {
@@ -60,7 +73,7 @@ func ToStruct(data []byte, v interface{}) error {
 			if tag == "" {
 				tag = strings.ToLower(typeField.Name)
 			}
-			m[tag] = GetTime(m, tag, TIMEDEFAULT, TIMEFORMAT)
+			m[tag] = getTime(m[tag])
 		}
 	}
 

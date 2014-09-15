@@ -12,42 +12,48 @@ import (
 func TableList(w http.ResponseWriter, r *http.Request) {
 	models, _ := models.TableList()
 	list, _ := utils.ToMapList(models, []string{}, utils.FilterModeExclude)
-	utils.RenderPage(list, w, r)
+	utils.Render(w).RenderPage(list)
 }
 
 func TableEntity(c web.C, w http.ResponseWriter, r *http.Request) {
-	id := utils.GetInt64(c.URLParams, "id", 0)
+	render := utils.Render(w)
+	param := utils.Getter(c.URLParams)
+	id := param.GetInt64("id", 0)
 	if id == 0 {
-		utils.RenderJson(nil, 0, w)
+		render.RenderJson(nil, 0)
 		return
 	}
 
 	var t models.Table
-	t.Get(id)
+	if err := t.Get(id); err != nil {
+		render.RenderError(err.Error())
+		return
+	}
 
-	utils.RenderJson(t, 1, w)
+	render.RenderJson(t, 1)
 }
 
 func TableSave(c web.C, w http.ResponseWriter, r *http.Request) {
+	render := utils.Render(w)
 	var (
 		t   models.Table
 		err error
 	)
 
 	//if err = json.NewDecoder(r.Body).Decode(&t); err != nil {
-	if err = utils.RequestStruct(r, &t); err != nil {
+	if err = utils.Request(r).FormatBody(&t); err != nil {
 		log.Println(err)
-		utils.RenderError(err.Error(), w)
+		render.RenderError(err.Error())
 		return
 	}
 
 	err = t.Save()
 	if err != nil {
 		log.Println(err)
-		utils.RenderError(err.Error(), w)
+		render.RenderError(err.Error())
 		return
 
 	}
 
-	utils.RenderJson(t, 1, w)
+	render.RenderJson(t, 1)
 }

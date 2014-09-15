@@ -34,7 +34,7 @@ func AdminMux() *web.Mux {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	utils.RenderHtml("/admin/main.html", w, r)
+	utils.Render(w).RenderHtml("/admin/main.html")
 }
 
 /*
@@ -42,7 +42,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 */
 func templateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	temp := fmt.Sprintf("/admin/%s_%s.html", c.URLParams["model"], c.URLParams["fn"])
-	utils.RenderHtml(temp, w, r)
+	utils.Render(w).RenderHtml(temp)
 }
 
 func menuHandler(w http.ResponseWriter, r *http.Request) {

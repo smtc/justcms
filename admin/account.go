@@ -11,7 +11,7 @@ import (
 func AccountList(w http.ResponseWriter, r *http.Request) {
 	models, _ := models.AccountList(0, 20, map[string]interface{}{})
 	list, _ := utils.ToMapList(models, []string{"email", "name"}, utils.FilterModeInclude)
-	utils.RenderPage(list, w, r)
+	utils.Render(w).RenderPage(list)
 }
 
 func AccountEntity(c web.C, w http.ResponseWriter, r *http.Request) {

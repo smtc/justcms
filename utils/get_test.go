@@ -36,89 +36,90 @@ func TestGetValue(t *testing.T) {
 				t.Fatal(fmt.Sprintf("StrAge should be '100', not %v", strVal))
 			}
 		*/
+		g := Getter(v)
 
-		if intVal = GetInt(v, "Age", 0); intVal != 1 {
+		if intVal = g.GetInt("Age", 0); intVal != 1 {
 			t.Fatal(fmt.Sprintf("Age should be 1, not %v", intVal))
 		}
 
-		if intVal = GetInt(v, "age", 0); intVal != 0 {
+		if intVal = g.GetInt("age", 0); intVal != 0 {
 			t.Fatal(fmt.Sprintf("age should be 0, not %v", intVal))
 		}
 
-		if intVal = GetInt(v, "StrAge", 0); intVal != 100 {
+		if intVal = g.GetInt("StrAge", 0); intVal != 100 {
 			t.Fatal(fmt.Sprintf("StrAge should be 100, not %v", intVal))
 		}
 
-		if strVal = GetString(v, "StrAge", ""); strVal != "100" {
+		if strVal = g.GetString("StrAge", ""); strVal != "100" {
 			t.Fatal(fmt.Sprintf("StrAge should be '100', not %v", strVal))
 		}
 
-		if strVal = GetString(v, "Empty", ""); strVal != "" {
+		if strVal = g.GetString("Empty", ""); strVal != "" {
 			t.Fatal(fmt.Sprintf("Empty should be empty, not %v", strVal))
 		}
 
-		if strVal = GetString(v, "Age", ""); strVal != "1" {
+		if strVal = g.GetString("Age", ""); strVal != "1" {
 			t.Fatal(fmt.Sprintf("Age should be '1', not %v", strVal))
 		}
 
-		if strVal = GetString(v, "Birthday", ""); strVal != "2012-03-04 05:06:07" {
+		if strVal = g.GetString("Birthday", ""); strVal != "2012-03-04 05:06:07" {
 			t.Fatal(fmt.Sprintf("Age should be '2012-03-04 05:06:07', not %v", strVal))
 		}
 
-		if f64Val = GetFloat64(v, "Money", 0); f64Val != 123.45 {
+		if f64Val = g.GetFloat64("Money", 0); f64Val != 123.45 {
 			t.Fatal(fmt.Sprintf("StrMoney should be 123.45, not %v", f64Val))
 		}
 
-		if f64Val = GetFloat64(v, "StrMoney", 0); f64Val != 678.90 {
+		if f64Val = g.GetFloat64("StrMoney", 0); f64Val != 678.90 {
 			t.Fatal(fmt.Sprintf("StrMoney should be 678.90, not %v", f64Val))
 		}
 
-		if f64Val = GetFloat64(v, "money", 0); f64Val != 0 {
+		if f64Val = g.GetFloat64("money", 0); f64Val != 0 {
 			t.Fatal(fmt.Sprintf("money should be 0, not %v", f64Val))
 		}
 
-		if f32Val = GetFloat32(v, "StrMoney", 0); f32Val != 678.90 {
+		if f32Val = g.GetFloat32("StrMoney", 0); f32Val != 678.90 {
 			t.Fatal(fmt.Sprintf("StrMoney should be 678.90, not %v", f64Val))
 		}
 
-		if timeVal = GetTime(v, "Birthday", now, TIMEFORMAT); timeVal != birthday {
+		if timeVal = g.GetTime("Birthday", now, TIMEFORMAT); timeVal != birthday {
 			t.Fatal(fmt.Sprintf("Birthday should be 2012-03-04 05:06:07, not %v", timeVal))
 		}
 
-		if timeVal = GetTime(v, "StrBirthday", now, TIMEFORMAT); timeVal != birthday {
+		if timeVal = g.GetTime("StrBirthday", now, TIMEFORMAT); timeVal != birthday {
 			t.Fatal(fmt.Sprintf("StrBirthday should be 2012-03-04 05:06:07, not %v", timeVal))
 		}
 
-		if timeVal = GetTime(v, "NoneBirthday", now, TIMEFORMAT); timeVal != now {
+		if timeVal = g.GetTime("NoneBirthday", now, TIMEFORMAT); timeVal != now {
 			t.Fatal(fmt.Sprintf("NoneBirthday should be %v, not %v", now, timeVal))
 		}
 
-		if boolVal = GetBool(v, "Active", false); !boolVal {
+		if boolVal = g.GetBool("Active", false); !boolVal {
 			t.Fatal(fmt.Sprintf("Active should be true, not %v", boolVal))
 		}
 
-		if boolVal = GetBool(v, "StrActive", false); !boolVal {
+		if boolVal = g.GetBool("StrActive", false); !boolVal {
 			t.Fatal(fmt.Sprintf("StrActive should be true, not %v", boolVal))
 		}
 
-		if boolVal = GetBool(v, "Age", false); !boolVal {
+		if boolVal = g.GetBool("Age", false); !boolVal {
 			t.Fatal(fmt.Sprintf("Age should be true, not %v", boolVal))
 		}
 
-		if boolVal = GetBool(v, "None", false); boolVal {
+		if boolVal = g.GetBool("None", false); boolVal {
 			t.Fatal(fmt.Sprintf("None should be false, not %v", boolVal))
 		}
 
 		// 暂时先不判断slice相等, 只判断长度
-		if byteVal = GetBytes(v, "Keys", []byte{}); len(byteVal) != len(keys) {
+		if byteVal = g.GetBytes("Keys", []byte{}); len(byteVal) != len(keys) {
 			t.Fatal(fmt.Sprintf("Keys should be [49 50 51 52 53 54], not %v", byteVal))
 		}
 
-		if byteVal = GetBytes(v, "StrKeys", []byte{}); len(byteVal) != len(keys) {
+		if byteVal = g.GetBytes("StrKeys", []byte{}); len(byteVal) != len(keys) {
 			t.Fatal(fmt.Sprintf("StrKeys should be [49 50 51 52 53 54], not %v", byteVal))
 		}
 
-		if byteVal = GetBytes(v, "None", []byte{}); len(byteVal) != 0 {
+		if byteVal = g.GetBytes("None", []byte{}); len(byteVal) != 0 {
 			t.Fatal(fmt.Sprintf("None should be [], not %v", byteVal))
 		}
 	}

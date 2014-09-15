@@ -13,8 +13,16 @@ import (
 	"time"
 )
 
-func GetValue(v interface{}, key string) reflect.Value {
-	fv := reflect.ValueOf(v)
+type GetStruct struct {
+	Value interface{}
+}
+
+func Getter(v interface{}) *GetStruct {
+	return &GetStruct{Value: v}
+}
+
+func (g *GetStruct) GetValue(key string) reflect.Value {
+	fv := reflect.ValueOf(g.Value)
 	switch fv.Kind() {
 
 	case reflect.Struct:
@@ -28,8 +36,8 @@ func GetValue(v interface{}, key string) reflect.Value {
 	return fv
 }
 
-func GetInterface(v interface{}, key string, def interface{}) interface{} {
-	val := GetValue(v, key)
+func (g *GetStruct) GetInterface(key string, def interface{}) interface{} {
+	val := g.GetValue(key)
 	if !val.IsValid() {
 		return def
 	}
@@ -37,8 +45,8 @@ func GetInterface(v interface{}, key string, def interface{}) interface{} {
 	return val.Interface()
 }
 
-func GetInt64(v interface{}, key string, def int64) int64 {
-	itf := GetInterface(v, key, def)
+func (g *GetStruct) GetInt64(key string, def int64) int64 {
+	itf := g.GetInterface(key, def)
 	if i, ok := itf.(int64); ok {
 		return i
 	}
@@ -56,13 +64,13 @@ func GetInt64(v interface{}, key string, def int64) int64 {
 	return def
 }
 
-func GetInt(v interface{}, key string, def int) int {
-	i := GetInt64(v, key, int64(def))
+func (g *GetStruct) GetInt(key string, def int) int {
+	i := g.GetInt64(key, int64(def))
 	return int(i)
 }
 
-func GetFloat64(v interface{}, key string, def float64) float64 {
-	itf := GetInterface(v, key, def)
+func (g *GetStruct) GetFloat64(key string, def float64) float64 {
+	itf := g.GetInterface(key, def)
 	if f, ok := itf.(float64); ok {
 		return f
 	}
@@ -77,13 +85,13 @@ func GetFloat64(v interface{}, key string, def float64) float64 {
 	return def
 }
 
-func GetFloat32(v interface{}, key string, def float32) float32 {
-	f := GetFloat64(v, key, float64(def))
+func (g *GetStruct) GetFloat32(key string, def float32) float32 {
+	f := g.GetFloat64(key, float64(def))
 	return float32(f)
 }
 
-func GetString(v interface{}, key string, def string) string {
-	itf := GetInterface(v, key, def)
+func (g *GetStruct) GetString(key string, def string) string {
+	itf := g.GetInterface(key, def)
 	if s, ok := itf.(string); ok {
 		return s
 	}
@@ -97,8 +105,8 @@ func GetString(v interface{}, key string, def string) string {
 	return fmt.Sprintf("%v", itf)
 }
 
-func GetTime(v interface{}, key string, def time.Time, fmt string) time.Time {
-	itf := GetInterface(v, key, def)
+func (g *GetStruct) GetTime(key string, def time.Time, fmt string) time.Time {
+	itf := g.GetInterface(key, def)
 	if t, ok := itf.(time.Time); ok {
 		return t
 	}
@@ -114,8 +122,8 @@ func GetTime(v interface{}, key string, def time.Time, fmt string) time.Time {
 	return def
 }
 
-func GetBool(v interface{}, key string, def bool) bool {
-	itf := GetInterface(v, key, def)
+func (g *GetStruct) GetBool(key string, def bool) bool {
+	itf := g.GetInterface(key, def)
 	if b, ok := itf.(bool); ok {
 		return b
 	}
@@ -134,8 +142,8 @@ func GetBool(v interface{}, key string, def bool) bool {
 	return def
 }
 
-func GetBytes(v interface{}, key string, def []byte) []byte {
-	itf := GetInterface(v, key, def)
+func (g *GetStruct) GetBytes(key string, def []byte) []byte {
+	itf := g.GetInterface(key, def)
 	if b, ok := itf.([]byte); ok {
 		return b
 	}
