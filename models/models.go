@@ -5,6 +5,7 @@ import "github.com/smtc/justcms/database"
 var (
 	account_db = ""
 	post_db    = ""
+	dynamic_db = ""
 )
 
 func InitDB() {
@@ -25,4 +26,7 @@ func InitDB() {
 	//db.AutoMigrate(Term{})
 	db.AutoMigrate(TermRelation{})
 	db.AutoMigrate(TermTaxonomy{})
+
+	db.AutoMigrate(Table{})
+	db.AutoMigrate(Column{})
 }

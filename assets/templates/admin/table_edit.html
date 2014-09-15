@@ -1,0 +1,18 @@
+<div src="table/" v-component="form">
+    <div class="page-header">
+        <h3>数据表管理 <small><i class="icon icon-angle-double-right"></i> 表编辑</small></h3>
+        <div class="buttons btn-group">
+            <a class="btn btn-default" href="javascript:;" onclick="history.back()" ><i class="icon icon-reply"></i> 返回</a>
+        </div>
+    </div>
+    <div class="page-content scrollable">
+        <form class="form-horizontal" role="form">
+            <form-control label="表名" type="text" tip="唯一" require v-with="value:model.name"></form-control>
+            <form-control label="中文名" type="text" require v-with="value:model.alias"></form-control>
+            <form-control label="备注" col=",10" maxlen="512" type="textarea" rows="5" v-with="value:model.des"></form-control>
+            <form-control>
+                <button class="btn btn-primary" type="submit">提 交</button>
+            </form-control>
+        </form>
+    </div>
+</div>

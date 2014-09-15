@@ -28,4 +28,7 @@ func dropTables() {
 	//db.DropTableIfExists(Term{})
 	db.DropTableIfExists(TermRelation{})
 	db.DropTableIfExists(TermTaxonomy{})
+
+	db.DropTableIfExists(Table{})
+	db.DropTableIfExists(Column{})
 }

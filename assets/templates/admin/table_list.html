@@ -1,0 +1,38 @@
+<div src="table/" v-component="page">
+    <div class="page-header">
+        <h3>系统管理 <small><i class="icon icon-angle-double-right"></i> Table List</small></h3>
+        <div class="buttons btn-group">
+            <a class="btn btn-success" v-href="table.edit#0"><i class="icon icon-plus"></i> 新建</a>
+            <a class="btn btn-default" ><i class="icon icon-refresh"></i> 刷新</a>
+        </div>
+    </div>
+    <div class="page-content scrollable">
+        <form class="form-inline form-search" v-on="submit:search">
+            <label class="form-group"><input class="form-control" placeholder="名称" v-model="filters.name" /></label>
+            <label class="form-group"><button class="btn btn-primary">确定</button></label>
+            <label class="form-group"><button v-on="click:filters={}" class="btn btn-default">重置</button></label>
+        </form>
+        <table class="table table-listed">
+            <thead>
+                <tr>
+                    <th style="width: 50px;"></th>
+                    <th>名称</th>
+                    <th>中文名</th>
+                    <th>描述</th>
+                    <th>创建时间</th>
+                    <th>修改时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-repeat="data">
+                    <td><a title="编辑" v-href="table.edit#{{id}}"><i class="icon icon-edit"></i></a></td>
+                    <td>{{name}}</td>
+                    <td>{{alias}}</td>
+                    <td>{{des}}</td>
+                    <td>{{created_at}}</td>
+                    <td>{{edit_at}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

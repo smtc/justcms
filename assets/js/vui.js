@@ -5805,7 +5805,7 @@ Request.prototype.withCredentials = function(){
  * @api public
  */
 
-Request.prototype.end = function(fn){
+Request.prototype.end = function(fn, sync){
   var self = this;
   var xhr = this.xhr = getXHR();
   var query = this._query.join('&');
@@ -5849,7 +5849,8 @@ Request.prototype.end = function(fn){
   }
 
   // initiate request
-  xhr.open(this.method, this.url, true);
+  //xhr.open(this.method, this.url, true);
+  xhr.open(this.method, this.url, !sync);
 
   // CORS
   if (this._withCredentials) xhr.withCredentials = true;
@@ -6056,6 +6057,8 @@ var Vue             = require('vue'),
     loading         = require('./components/loading'),
     message         = require('./components/message'),
     tree            = require('./components/tree'),
+    form            = require('./components/form'),
+    lang            = require('./lang/lang'),
     $data           = {},
     initialized     = false,
     vm
@@ -6065,7 +6068,8 @@ require('./prototype')
 
 var components = {
     'date': require('./components/date'),
-    'form': require('./components/form'),
+    'form': form.form,
+    'form-struct': form['form-struct'],
     'form-control': require('./components/form-control'),
     'loading': loading.component,
     'message': message.component,
@@ -6082,8 +6086,6 @@ var components = {
 function init() {
     if (initialized) return
     initialized = true
-
-    //$data.messages = message.messages
 
     vm = new Vue({
 
@@ -6111,6 +6113,9 @@ function init() {
 // export Vue
 window.Vue = Vue
 
+//set default language
+lang.set('zh-cn')
+
 module.exports = {
     request: request,
     utils: utils,
@@ -6121,6 +6126,7 @@ module.exports = {
     message: message,
     openbox: openbox,
     init: init,
+    setLang: lang.set,
     Vue: Vue,
     vm: vm,
     
@@ -7697,6 +7703,7 @@ var STATUS = { DAY:1, MONTH:2, YEAR:3 }
 module.exports = {
     template: require('./date.html'),
     replace: true,
+    paramAttributes: ['placeholder'],
 
     methods: {
         open: function () {
@@ -7723,7 +7730,7 @@ module.exports = {
             document.body.removeEventListener('click', this.$closeHandle)
         },
 
-        set: function (day) {
+        set: function (day, event) {
             this.date = day.str
             this.currentDate = {
                 year: day.year,
@@ -7856,10 +7863,104 @@ require.register("vui/src/components/form.js", function(exports, require, module
 var utils       = require('../utils'),
     request     = require('../request'),
     location    = require('../location'),
+    lang        = require('../lang/lang'),
     loading     = require('./loading'),
     message     = require('./message')
 
-module.exports = {
+function getStruct(struct) {
+    struct = struct || []
+    var hs = []
+    utils.forEach(struct, function (v, i) {
+        if (v.edit) hs.push(v)
+    })
+    return hs
+}
+
+// buttons =========================================================
+var EDIT_OP = {
+    "back": '<a class="btn btn-info" href="javascript:;" v-on="click:back"><i class="icon icon-reply"></i> {text}</a>'
+}
+
+function getEditOp(src) {
+    var ops = [],
+        op = '',
+        obj
+    src = src || {}
+    utils.forEach(src, function (v, k) {
+        op = EDIT_OP[k]
+        if (!op) return
+        obj = {
+            // {{key}} replace {{d.key}}，模板需要用d.key取值
+            op: v.replace(/\{\{([^{}]*)\}\}/g, "{{d.$1}}"),
+            text: lang.get('button.' + k)
+        }
+        ops.push(utils.substitute(op, obj))
+    })
+    return ops.join('&nbsp; ')
+}
+
+// form controls ====================================================
+function getControls(struct) {
+    var controls = [],
+        str
+
+    function addIf(k, s) {
+        if (s[k] === undefined) return ''
+        return k + '="' + s[k] + '" '
+    }
+
+    function getCol(s) {
+        var str = ''
+        if (s.maxlen) {
+            if (s.maxlen < 30) {
+                str += 'col=",6" '
+            } else {
+                str += 'col=",12" '
+            }
+        } else {
+            switch (s.type) {
+                case 'integer':
+                case 'select':
+                    str += 'col=",4" '
+                    break
+            }
+        }
+        return str
+    }
+
+    function getType(s) {
+        if (s.type === undefined || s.type === 'text' || s.type === 'textarea') {
+            if (s.maxlen < 120)
+                return 'type="text" '
+            else
+                return 'type="textarea" rows="6" '
+        }
+
+        if (s.type === 'bool')
+            return 'type="checkbox" options="\'{text}\':true" '
+
+        return 'type="' + s.type + '" '
+    }
+
+    struct.forEach(function (s) {
+        str = '<form-control '
+        str += 'label="{text}" '
+        str += 'name="{key}" '
+        str += 'v-with="value:model.{key}" '
+        str += getCol(s)
+        str += getType(s)
+        utils.forEach(['min', 'max', 'minlen', 'maxlen', 'src', 'require'], function (k) {
+            str += addIf(k, s)
+        })
+        str += '></form-control>'
+        controls.push(utils.substitute(str, s))
+    })
+    controls.push(utils.substitute('<form-control><button class="btn btn-primary" type="submit">{text}</button></form-control>', {text:lang.get('button.submit')}))
+    return controls.join('')
+}
+
+var component = {
+    //template: require('./form.html'),
     methods: {
         back: function () {
             window.history.back()
@@ -7870,6 +7971,11 @@ module.exports = {
         }
     },
 
+    data: {
+        struct: null,
+        content: ''
+    },
+
     created: function () {
         this.valid = true
         this.controls = {}
@@ -7877,14 +7983,51 @@ module.exports = {
 
         this.src = this.$el.getAttribute('action') || this.$el.getAttribute('src')
 
+        var struct = this.$el.getAttribute("struct")
+        if (struct) {
+            loading.start()
+            // use sync 
+            request.get(struct).end(function (res) {
+                loading.end()
+                if (res.status !== 200 || res.body.status !== 1) {
+                    message.error(res.body.errors, res.status)
+                    return
+                }
+
+                this.struct = getStruct(res.body.struct)
+                // if struct has src, use struct.src
+                if (res.body.src)
+                    this.src = res.body.src
+                this.content = getControls(this.struct)
+            }.bind(this), true)
+        }
+
+    },
+
+    ready: function () {
+        var node = location.node(true),
+            search = node.search,
+            hash = node.hash
+        request.get(this.src + hash).query(search).end(function (res) {
+            if (res.status === 200) {
+                if (res.body.status === 1)
+                    this.model = res.body.data || {}
+                else if (res.body.errors)
+                    message.error(res.body.errors)
+            } else {
+                //message.error('', res.status)
+            }
+        }.bind(this))
+
+
         var form = this.$el;
         if (form.tagName != "FORM")
             form = form.querySelector('form')
 
-        // submit 使用 put 方法
         form.addEventListener('submit', function (event) {
             event.preventDefault()
             this.$broadcast('check')
+            this.valid = true
 
             utils.forEach(this.controls, function (v, k) {
                 this.valid = this.valid && v
@@ -7898,7 +8041,7 @@ module.exports = {
                         if (res.body.status === 1) {
                             this.success(res.body)
                         } else {
-                            message.error(res.body.error)
+                            message.error(res.body.errors)
                         }
                     } else {
                         message.error('', res.status)
@@ -7906,27 +8049,21 @@ module.exports = {
                 }.bind(this))
             }
         }.bind(this))
-
-    },
-
-    ready: function () {
-        var node = location.node(true),
-            search = node.search,
-            hash = node.hash
-        request.get(this.src + hash).query(search).end(function (res) {
-            if (res.status === 200) {
-                if (res.body.status === 1)
-                    this.model = res.body.data
-                else if (res.body.errors)
-                    message.error(res.body.errors)
-            }
-        }.bind(this))
     }
+}
+
+var component_struct = utils.copy(component)
+component_struct.template = '<form v-show="struct" class="form-horizontal" v-html="content" role="form"></form>'
+
+module.exports = {
+    'form': component,
+    'form-struct': component_struct
 }
 
 });
 require.register("vui/src/components/form-control.js", function(exports, require, module){
-var utils = require('../utils')
+var utils = require('../utils'),
+    lang  = require('../lang/lang')
 
 function getCol(str, label) {
     var col = [2, 6]
@@ -7972,30 +8109,9 @@ var TEMPLATES = {
         'tel': /^[\d\s ().-]+$/
     },
 
-    MSGS = {
-        'require': '不能为空',
-        'maxlen': '长度不能大于{_maxlen}',
-        'minlen': '长度不能小于{_minlen}',
-        'maxlen_cb': '最多选{_maxlen}个选项',
-        'minlen_cb': '最少选{_minlen}个选项',
-        'max': '不能大于{_max}',
-        'min': '不能小于{_min}',
-        'regex': '格式不正确',
-        'alpha': '只能包含英文字符，"-"，"_"',
-        'alphanum': '只能包含数字、英文字符和"_"',
-        'tip': '{_tip}'
-    },
+    MSGS,
 
-    TIPS = {
-        'require': '必填',
-        'max': '最大值{_max}',
-        'min': '最小值{_min}',
-        'maxlen': '最大长度{_maxlen}',
-        'minlen': '最小长度{_minlen}',
-        'maxlen_cb': '最多选{_maxlen}项',
-        'minlen_cb': '最少选{_minlen}项'
-    }
-
+    TIPS
 
 // 必填
 function _require() {
@@ -8014,7 +8130,7 @@ function _len(val, t) {
         t += '_cb'
    
     if (t.indexOf('len') >= 0)
-        len = this.value.length
+        len = this.value.toString().length
     else
         len = parseInt(this.value) || 0
 
@@ -8133,6 +8249,9 @@ module.exports = {
     data: {},
 
     created: function () {
+        TIPS = lang.get('validation.tips')
+        MSGS = lang.get('validation.msgs')
+
         this.id = utils.nextUid()
         this.pass()
         this.checkList = []
@@ -8189,7 +8308,7 @@ var utils   = require('../utils'),
     handle  = { status: 0 }
 
 var component = {
-    template:   '<div v-show="handle.status > 0" class="loading">' +
+    template:   '<div v-transition v-show="handle.status > 0" class="loading">' +
                     '<div class="overlay"></div>' +
                     '<label><img v-show="img" v-attr="src:img" />{{text}}</label>' +
                 '</div>',
@@ -8205,6 +8324,8 @@ var component = {
     created: function () {
         this.img = this.$el.getAttribute('img')
         this.text = this.$el.getAttribute('text')
+        this.$el.removeAttribute('img')
+        this.$el.removeAttribute('text')
     }
 
 }
@@ -8227,18 +8348,19 @@ require.register("vui/src/components/message.js", function(exports, require, mod
  * message { text: '', type: '' }
  */
 var utils       = require('../utils'),
-    messages    = [],
-    httpStatus  = {
-        404: '请求的地址不存在',
-        500: '内部服务器错误'
-    }
+    lang        = require('../lang/lang'),
+    messages    = []
 
 var component = {
-    template:   '<div v-repeat="messages" class="alert alert-{{type}}">' +
+    template:   '<div v-show="messages.length>0">' +
+                '<div v-repeat="messages" class="alert alert-{{type}}">' +
                     '<strong>{{time}}</strong><br />' +
                     '{{text}}' +
                     '<button v-on="click: remove(this)" class="close">&times;</button>' +
+                '</div>' +
                 '</div>',
+
+    replace: true,
 
     data: {
         messages: messages
@@ -8246,6 +8368,7 @@ var component = {
 
     methods: {
         remove: function (item) {
+            //utils.arrayRemove(messages, item.$data)
             this.messages.$remove(item.$data)
         }
     }
@@ -8275,8 +8398,8 @@ module.exports = {
     
     error: function (msg, status) {
         if (!msg && status)
-            msg = httpStatus[status]
-        this.push(msg, 'danger')
+            msg = lang.get('httpStatus.' + status)
+        this.push(msg || "", 'danger')
     },
     
     info: function (msg) {
@@ -8296,6 +8419,7 @@ module.exports = {
 require.register("vui/src/components/openbox.js", function(exports, require, module){
 var Vue     = require('vue'),
     utils   = require('../utils'),
+    lang    = require('../lang/lang'),
     //request = require('../request'),
     route   = require('../route')
 
@@ -8309,8 +8433,10 @@ function openbox(opts) {
 
         data = utils.extend({
             title: opts.title,
-            width: opts.width || 600,
-            model: { name:1235 },
+            width: opts.width || 6,
+            model: {},
+            btns: [],
+            body: opts.body,
             src: opts.src
         }, opts.data),
 
@@ -8319,9 +8445,8 @@ function openbox(opts) {
             replace: true,
             methods: {
                 show: function () {
-                    utils.addClass(this.$el, 'open')
-                    var box = this.$el.querySelector('.openbox-content')
-                    box.style.width = this.width
+                    //utils.addClass(this.$el, 'open')
+                    this.$open = true
                 },
                 bgclose: function (e) {
                     var box = this.$el.querySelector('.openbox-content')
@@ -8338,17 +8463,18 @@ function openbox(opts) {
             data: data,
             created: function () {
                 document.body.appendChild(this.$el)
-                var self = this
+                this.$open = false
+                this.btns = []
                 if (opts.btns) {
-                    self.btns = []
+                    var self = this
                     utils.forEach(opts.btns, function (btn) {
                         if (typeof btn === 'string') {
                             switch(btn) {
                                 case 'close':
-                                    self.btns.push({ text: '关 闭', type:'default', fn: self.close.bind(self) })
+                                    self.btns.push({ text: lang.get('button.close'), type:'default', fn: self.close.bind(self) })
                                     break
                                 case 'ok':
-                                    self.btns.push({ text: '确 定', type:'primary', fn: self.close.bind(self, true) })
+                                    self.btns.push({ text: lang.get('button.ok'), type:'primary', fn: self.close.bind(self, true) })
                                     break
                             }
                         } else {
@@ -8358,9 +8484,10 @@ function openbox(opts) {
                 }
 
                 this.$watch('src', function () {
-                    route.getComponent(this.src, function () {
-                        this.content = this.src
-                    }.bind(this))
+                    if (this.src)
+                        route.getComponent(this.src, function () {
+                            this.content = this.src
+                        }.bind(this))
                 }.bind(this))
             },
 
@@ -8375,6 +8502,16 @@ function openbox(opts) {
     return vm
 }
 
+openbox.confirm = function (message, callback) {
+    openbox({
+        title: "Confirm",
+        show: true,
+        width: 6,
+        body: message,
+        btns: ['ok', 'close'],
+        callback: callback
+    })
+}
 
 module.exports = openbox
 
@@ -8419,10 +8556,17 @@ module.exports = {
         },
 
         setCheckboxValue: function (el, value) {
-            if (el.checked)
-                this.value.push(value)
-            else
-                utils.arrayRemove(this.value, value)
+            if (this.$single) {
+                if (el.checked)
+                    this.value = value
+                else
+                    this.value = null
+            } else {
+                if (el.checked)
+                    this.value.push(value)
+                else
+                    utils.arrayRemove(this.value, value)
+            }
         },
 
         setRadioValue: function (el, value) {
@@ -8453,12 +8597,18 @@ module.exports = {
         if (utils.toBoolean(this.inline))
             this.className = this.type + '-inline'
 
+        function judge() {
+            this.$single = utils.size(this.options) === 1
+        }
+
         if (this.options) {
             this.options = formatOption(this.options)
+            judge.call(this)
         } else if (!this.options && src) {
             this.options = {}
             request.get(src).end(function (res) {
                 this.options = formatOption(res.body)
+                judge.call(this)
             }.bind(this))
         }
 
@@ -8477,16 +8627,14 @@ module.exports = {
                 this.value = this.value.split(',')
         }
 
-        this.$watch('value', function () {
+        this.$watch('value', function (value, mut) {
             if (this.type === 'radio')
                 this.$el.querySelector('input[value="' + this.value + '"]').checked = true
             else {
-                var vals = this.value
                 utils.forEach(this.$el.querySelectorAll('input[type="checkbox"]'), function (el) {
-                    el.checked = contains(vals, el.value)
+                    el.checked = value.toString() === el.value.toString() || contains(value, el.value)
                 }.bind(this))
             }
-                
         }.bind(this))
     }
 }
@@ -8499,9 +8647,10 @@ var request   = require('../request'),
     route     = require('../route'),
     message   = require('./message'),
     loading   = require('./loading'),
+    lang      = require('../lang/lang'),
+    openbox   = require('./openbox'),
     forEach   = utils.forEach,
     basepath  = _location.node(true).pathname
-
 
 function getSearch(pager, filters, sort) {
     var search = {},
@@ -8509,8 +8658,9 @@ function getSearch(pager, filters, sort) {
 
     forEach({p:pager, f:filters, s:sort}, function (obj, pre) {
         if (!obj) return
+        pre = pre === 'f' ? 'f.': ''
         forEach(obj, function (v, k) {
-            if (undefined !== v && '' !== v) search[pre + '.' + k] = v
+            if (undefined !== v && '' !== v) search[pre + k] = v
         })
     })
 
@@ -8527,8 +8677,74 @@ function routeChange() {
         this.init()
 }
 
+// filters ========================================================
+var FILTERS = {
+    text: '<input class="form-control" placeholder="{text}" v-model="filters.{key}${filter}" />',
+    select: '<div class="form-control" src="{src}" style="width:160px" placeholder="{text}" v-component="select" v-with="value:filters.{key}${filter}"></div>',
+    bool: '<div class="form-control" src="bool" style="width:60px" placeholder="{text}" v-component="select" v-with="value:filters.{key}${filter}"></div>',
+    date: '<div class="form-control date" style="width:140px" placeholder="{text}" v-component="date" v-with="date:filters.{key}${filter}"></div>'
+}
+function getFilter(struct) {
+    struct = struct || []
+    var filter = []
+    utils.forEach(struct, function (v, i) {
+        if (!v.filter) return
+        var el = utils.substitute(FILTERS[v.type], v)
+        filter.push(el)
+    })
+    return filter
+}
+
+function getStruct(struct) {
+    struct = struct || []
+    var hs = []
+    utils.forEach(struct, function (v, i) {
+        if (!v.hide) hs.push(v)
+    })
+    return hs
+}
+
+// buttons =========================================================
+var UNIT_OP = {
+    "edit": '<a title="{text}" v-href="{op}"><i class="icon icon-edit"></i></a>',
+    "del": '<a title="{text}" class="text-danger" href="javascript:;" v-on="click:del(\'{op}\')"><i class="icon icon-trash-o"></i></a>'
+}
+var MULT_OP = {
+    "new": '<a class="btn btn-success" v-href="{op}"><i class="icon icon-plus"></i> {text}</a>',
+    "refresh": '<a class="btn btn-info" v-on="click:update"><i class="icon icon-refresh"></i> {text}</a>',
+    "del": '<a class="btn btn-danger" title="{text}" class="text-danger" href="javascript:;" v-on="click:delSelect(\'{op}\')"><i class="icon icon-trash-o"></i> {text}</a>',
+    "filter": '<a class="btn btn-default" v-if="filterTpl.length>0" href="javascript:;" v-on="click:filterShow=!filterShow"><i v-class="icon-eye:filterShow,icon-eye-slash:!filterShow" class="icon"></i> {text}</a>'
+}
+function getOp(src, oplist) {
+    var ops = [],
+        op = '',
+        obj
+    src = src || {}
+    utils.forEach(src, function (v, k) {
+        op = oplist[k]
+        if (!op) return
+        obj = {
+            // {{key}} replace {{d.key}}，模板需要用d.key取值
+            op: v.replace(/\{\{([^{}]*)\}\}/g, "{{d.$1}}"),
+            text: lang.get('button.' + k)
+        }
+        ops.push(utils.substitute(op, obj))
+    })
+    return ops.join('&nbsp; ')
+}
+function getUnitOp(src) {
+    return getOp(src, UNIT_OP)
+}
+function getMultOp(src, filter) {
+    var ops = getOp(src, MULT_OP)
+    if (filter)
+        ops += '&nbsp; ' + utils.substitute(MULT_OP["filter"], { text: lang.get('button.filter') })
+    return ops
+}
 
 module.exports = {
+    template: require('./page.html'),
+
     paramAttributes: ['src', 'delay', 'routeChange'],
     methods: {
         search: function (fs) {
@@ -8546,16 +8762,15 @@ module.exports = {
                 _location.search(search.obj)
 
             loading.start()
-            request.get(url)
-                .end(function (res) {
-                    loading.end()
-                    if (res.status != 200) {
-                        message.error('', res.status)
-                        return
-                    }
-                    self.data = res.body.data
-                    self.total = res.body.total
-                })
+            request.get(url).end(function (res) {
+                loading.end()
+                if (res.status != 200) {
+                    message.error('', res.status)
+                    return
+                }
+                self.data = res.body.data
+                self.total = res.body.total
+            })
         },
 
         updateModel: function (item) {
@@ -8574,18 +8789,45 @@ module.exports = {
         },
 
         del: function (data) {
-            loading.start()
-            request.del(this.src).send(data).end(function (res) {
-                loading.end()
-                if (res.status != 200) {
-                    message.error('', res.status)
-                    return
-                }
-                if (res.body.status === 1)
-                    this.update()
-                else
-                    message.error(res.body.errors)
-            }.bind(this))
+            var self = this
+            function _del() {
+                loading.start()
+                request.del(self.src).send(data).end(function (res) {
+                    loading.end()
+                    if (res.status != 200) {
+                        message.error('', res.status)
+                        return
+                    }
+                    if (res.body.status === 1)
+                        self.update()
+                    else
+                        message.error(res.body.errors)
+                })
+            }
+            
+            var count = 1
+            if ('string' !== typeof data)
+                count = data.length
+            openbox.confirm(lang.get('page.del_confirm', {count: count}), function (status) {
+                if (status) _del()
+            })
+            
+        },
+
+        delSelect: function (keys) {
+            keys = keys || 'id'
+            if (typeof keys == 'string')
+                keys = keys.split(',')
+
+            for (var i=0; i<keys.length; i++) {
+                keys[i] = keys[i].trim()
+            }
+            var data = this.getSelected.apply(this, keys)
+
+            if (data.length === 0)
+                message.warn(lang.get('page.must_select'))
+            else
+                this.del(data)
         },
 
         selectAll: function () {
@@ -8594,7 +8836,7 @@ module.exports = {
                 d.vui_checked = allChecked
             })
         },
-
+        
         select: function (item) {
             item.vui_checked = !item.vui_checked
         },
@@ -8623,6 +8865,7 @@ module.exports = {
             return sd
         },
 
+
         init: function () {
             var search = utils.parseKeyValue(_location.node(true).search) || {},
                 self = this
@@ -8633,8 +8876,10 @@ module.exports = {
                 size: 20
             }
 
+            this.button = lang.get('button')
             this.filters = {}
             this.sort = {}
+            this.pageable = !(this.$el.getAttribute('pageable') === 'false')
 
             function setFilter(v, k) {
                 if (k.indexOf('f.') !== 0) return
@@ -8643,10 +8888,10 @@ module.exports = {
             
             forEach(search, function (v, k) {
                 switch (k) {
-                    case 'p.page':
+                    case 'page':
                         self.pager.page = parseInt(v)
                         break
-                    case 'p.size':
+                    case 'size':
                         self.pager.size = parseInt(v)
                         break
                     default:
@@ -8669,10 +8914,38 @@ module.exports = {
         filters: {},
         pager: {},
         total: 0,
-        sort: {}
+        sort: {},
+        struct: null,
+        pageable: false
     },
     created: function () {
         this.init()
+
+        var struct = this.$el.getAttribute("struct")
+        if (struct) {
+            loading.start()
+            // use sync 
+            request.get(struct).end(function (res) {
+                loading.end()
+                if (res.status !== 200 || res.body.status !== 1) {
+                    message.error(res.body.errors, res.status)
+                    return
+                }
+
+                this.struct = getStruct(res.body.struct)
+                this.filterTpl = getFilter(res.body.struct)
+                // if struct has src, use struct.src
+                if (res.body.src)
+                    this.src = res.body.src
+                if (res.body.pageable !== undefined)
+                    this.pageable = res.body.pageable
+                if (res.body.op) {
+                    this.unitOp = getUnitOp(res.body.op.unit)
+                    this.multOp = getMultOp(res.body.op.mult, this.filterTpl.length>0)
+                }
+            }.bind(this), true)
+        }
+
         if (!this.delay) this.update()
 
         var form = this.$el.querySelector('form')
@@ -8683,7 +8956,6 @@ module.exports = {
         }
     },
     ready: function () {
-        //this.$watch('pager.page', this.update)
         if (this.routeChange)
             route.bind(routeChange.bind(this))
     },
@@ -8757,6 +9029,7 @@ module.exports = {
 require.register("vui/src/components/select.js", function(exports, require, module){
 var request = require('../request'),
     utils   = require('../utils'),
+    lang    = require('../lang/lang'),
     forEach = utils.forEach
 
 module.exports = {
@@ -8791,7 +9064,7 @@ module.exports = {
             }
 
             forEach(this.options, function (item) {
-                if (value == item.value)
+                if (value === item.value)
                     this.select(item)
             }.bind(this))
         }
@@ -8802,10 +9075,15 @@ module.exports = {
     created: function () {
         var self = this
         utils.addClass(this.$el, 'select')
-        request.get(this.src).end(function (res) {
-            self.options = res.body
-            self.setValue(self.value)
-        })
+
+        if (this.src === 'bool') {
+            this.options = lang.get('boolSelect')
+        } else if (this.src) {
+            request.get(this.src).end(function (res) {
+                self.options = res.body
+                self.setValue(self.value)
+            })
+        }
 
         this.$closeHandle = function () {
             self.close()
@@ -8915,28 +9193,43 @@ var tree = {
 
     created: function () {
         var self = this
+        this.$initialized = false
+        this.$first = true
         this.data = []
         this.list = {}
         this.selectable = this.selectable === 'true'
-        this.value = ''
         this.select = this.select || 'id'
+
         if (this.src) {
             request.get(this.src).end(function (res) {
-                if (res.status !== 200) {
+               if (res.status !== 200) {
                     message.error(null, res.status)
                     return
                 }
                 if (res.body.status == 1) {
                     self.data = initData(res.body.data, self.list)
-                    initValue(self.list, self.value, self.select)
+                    if (self.value && !self.$initialized) {
+                        self.$initialized = true
+                        initValue(self.list, self.value, self.select)
+                    }
+
+                    self.$watch('data', function () {
+                        self.value = self.getSelected(self.select)
+                    })
                 } else {
                     message.error(res.body.errors)
-                }
+                } 
             })
         }
 
-        this.$watch('data', function () {
-            this.value = this.getSelected(this.select)
+    },
+
+    ready: function () {
+        // 初始化赋值
+        this.$watch('value', function () {
+            if (this.$initialized) return
+            this.$initialized = true
+            initValue(this.list, this.value, this.select)
         }.bind(this))
     }
 }
@@ -8991,6 +9284,89 @@ module.exports = {
 }
 
 });
+require.register("vui/src/lang/lang.js", function(exports, require, module){
+var utils = require('../utils')
+
+var vs  = {}
+
+module.exports = {
+    get: function (key, obj) {
+        var ks  = key.split('.'),
+            val = vs
+        ks.forEach(function (k, i) {
+            if (!val) {
+                val = undefined
+                return
+            }
+            val = val[k]
+        })
+        if (typeof obj === 'object')
+            val = utils.substitute(val, obj)
+        return val
+    },
+
+    set: function (lang) {
+        vs = require('./' + lang)
+    }
+}
+
+});
+require.register("vui/src/lang/zh-cn.js", function(exports, require, module){
+module.exports = {
+    httpStatus: {
+        404: '请求的地址不存在',
+        500: '内部服务器错误'
+    },
+    button: {
+        filter: '筛选',
+        reset: '重置',
+        submit: '提交',
+        ok: '确定',
+        close: '关闭',
+        cancel: '取消',
+        back: '返回',
+        add: '增加',
+        new: '新建',
+        refresh: '刷新',
+        edit: '编辑',
+        del: '删除'
+    },
+    boolSelect: [
+        { text: '　', value: '' },
+        { text: '是', value: 1 },
+        { text: '否', value: 0 }
+    ],
+    validation: {
+        msgs: {
+            'require': '不能为空',
+            'maxlen': '长度不能大于{_maxlen}',
+            'minlen': '长度不能小于{_minlen}',
+            'maxlen_cb': '最多选{_maxlen}个选项',
+            'minlen_cb': '最少选{_minlen}个选项',
+            'max': '不能大于{_max}',
+            'min': '不能小于{_min}',
+            'regex': '格式不正确',
+            'alpha': '只能包含英文字符，"-"，"_"',
+            'alphanum': '只能包含数字、英文字符和"_"',
+            'tip': '{_tip}'
+        },
+        tips: {
+            'require': '必填',
+            'max': '最大值{_max}',
+            'min': '最小值{_min}',
+            'maxlen': '最大长度{_maxlen}',
+            'minlen': '最小长度{_minlen}',
+            'maxlen_cb': '最多选{_maxlen}项',
+            'minlen_cb': '最少选{_minlen}项'
+        }
+    },
+    page: {
+        del_confirm: '是否确定要删除这 {count} 条数据？',
+        must_select: '至少选择一条数据'
+    }
+}
+
+});
 
 
 
@@ -8998,16 +9374,22 @@ module.exports = {
 
 
 require.register("vui/src/components/date.html", function(exports, require, module){
-module.exports = '<div v-on="click:open()">\n    <span class="date-text" v-text="date"></span>\n    <i class="icon icon-calendar"></i>\n    <div class="date-picker" v-class="date-picker-up: pickerUp">\n        <div class="header">\n            <a href="javascript:;" class="handle pre" v-on="click:change(-1)"><i class="icon icon-chevron-left"></i></a>\n            <a href="javascript:;" v-on="click:statusToggle()" class="handle year">{{showDate.year}} 年<span v-show="status == 1"> {{showDate.month + 1}} 月</span></a>\n            <a href="javascript:;" class="handle next" v-on="click:change(1)"><i class="icon icon-chevron-right"></i></a>\n        </div>\n        <div class="inner" v-show="status == 1">\n            <div class="week" v-repeat="w:[\'日\', \'一\', \'二\', \'三\', \'四\', \'五\', \'六\']">{{w}}</div>\n            <button type="button" v-on="click:set(day)" v-class="gray: day.month!=showDate.month, today:day.date==currentDate.day && day.month==currentDate.month" class="day" v-repeat="day:days">{{day.date}}</button>\n        </div>\n        <div class="inner" v-show="status == 2">\n            <button type="button" v-on="click:setMonth(month-1)" class="month" v-repeat="month:[1,2,3,4,5,6,7,8,9,10,11,12]"">{{month}}月</button>\n        </div>\n        <div class="inner" v-show="status == 3">\n            <button type="button" v-on="click:setYear(year)" class="year" v-repeat="year:years">{{year}}</button>\n        </div>\n    </div>\n</div> \n';
+module.exports = '<div v-on="click:open()">\n    <span v-class="hide:!!date" class="placeholder">{{placeholder}}</span>\n    <span class="date-text" v-text="date"></span>\n    <i class="icon icon-calendar"></i>\n    <div class="date-picker" v-class="date-picker-up: pickerUp">\n        <div class="header">\n            <a href="javascript:;" class="handle pre" v-on="click:change(-1)"><i class="icon icon-chevron-left"></i></a>\n            <a href="javascript:;" v-on="click:statusToggle()" class="handle year">{{showDate.year}} 年<span v-show="status == 1"> {{showDate.month + 1}} 月</span></a>\n            <a href="javascript:;" class="handle next" v-on="click:change(1)"><i class="icon icon-chevron-right"></i></a>\n        </div>\n        <div class="inner" v-show="status == 1">\n            <div class="week" v-repeat="w:[\'日\', \'一\', \'二\', \'三\', \'四\', \'五\', \'六\']">{{w}}</div>\n            <button type="button" v-on="click:set(day, $event)" v-class="gray: day.month!=showDate.month, today:day.date==currentDate.day && day.month==currentDate.month" class="day" v-repeat="day:days">{{day.date}}</button>\n        </div>\n        <div class="inner" v-show="status == 2">\n            <button type="button" v-on="click:setMonth(month-1)" class="month" v-repeat="month:[1,2,3,4,5,6,7,8,9,10,11,12]"">{{month}}月</button>\n        </div>\n        <div class="inner" v-show="status == 3">\n            <button type="button" v-on="click:setYear(year)" class="year" v-repeat="year:years">{{year}}</button>\n        </div>\n    </div>\n</div> \n';
+});
+require.register("vui/src/components/form.html", function(exports, require, module){
+module.exports = '<form v-show="struct" class="form-horizontal" v-html="content" role="form"></form>\n<content></content>\n';
 });
 require.register("vui/src/components/form-control.html", function(exports, require, module){
 module.exports = '<div v-class="has-error:!valid" class="form-group">\n    <label for="{{id}}" class="col-sm-{{_col[0]}} control-label">{{_label}}</label>\n    <div v-if="_type!==\'empty\'" class="col-sm-{{12-_col[0]}}" v-html="_content"></div>\n    <div v-if="_type===\'empty\'" class="col-sm-{{12-_col[0]}}"><content></content></div>\n</div>\n';
 });
 require.register("vui/src/components/openbox.html", function(exports, require, module){
-module.exports = '<div class="openbox">\n    <div class="openbox-backdrop"></div>\n    <div class="openbox-inner" v-on="click:bgclose">\n        <div class="openbox-content">\n            <a href="script:;" class="close" v-on="click:close(false)">&times;</a>\n            <div class="openbox-header" v-if="title">\n                <h3 v-text="title"></h3>\n            </div>\n            <div class="openbox-body" v-view="content" v-with="src:src, model:model"></div>\n            <div class="openbox-footer">\n                <button type="button" class="btn btn-{{type}}" v-text="text" v-on="click:fn()" v-repeat="btns"></button>\n            </div>\n        </div>\n    </div>\n</div>\n\n';
+module.exports = '<div v-show="$open" class="openbox" v-transition>\n    <div class="openbox-backdrop"></div>\n    <div class="openbox-inner" v-on="click:bgclose">\n        <div class="openbox-content col-md-{{width}}">\n            <a href="script:;" class="close" v-on="click:close(false)">&times;</a>\n            <div class="openbox-header" v-if="title">\n                <h3 v-text="title"></h3>\n            </div>\n            <div class="openbox-body" v-view="content" v-with="src:src, model:model"></div>\n            <div class="openbox-body" v-if="body" v-html="body"></div>\n            <div class="openbox-footer">\n                <button type="button" class="btn btn-{{type}}" v-text="text" v-on="click:fn()" v-repeat="btns"></button>\n            </div>\n        </div>\n    </div>\n</div>\n\n';
 });
 require.register("vui/src/components/option.html", function(exports, require, module){
 module.exports = '<div v-repeat="options" class="{{className}}">\n    <label><input type="{{type}}" v-on="change:setValue($value, $event)" name="{{name}}" value="{{$value}}" /> {{$key}}</label> \n</div>\n';
+});
+require.register("vui/src/components/page.html", function(exports, require, module){
+module.exports = '<content></content>\n<div v-if="struct">\n<div class="page-header">\n    <div class="buttons" v-html="multOp"></div>\n</div>\n<div class="page-content">\n    <form v-if="filterShow" class="form-inline page-filter" v-transition v-on="submit:search">\n        <div v-repeat="f:filterTpl" v-html="f" class="form-group"></div><div class="form-group"><button class="btn btn-primary">{{button.ok}}</button></div><div class="form-group"><button v-on="click:search(null)" type="button" class="btn btn-default">{{button.reset}}</button></div>\n    </form>\n    <table class="table table-hover">\n        <thead>\n            <tr>\n                <th class="check" v-on="click: selectAll"><i v-class="icon-check-square-o:allChecked, icon-square-o:!allChecked" class="icon"></i></th>\n                <th></th>\n                <th v-repeat="h:struct">{{h.text}}</th>\n            </tr>\n        </thead>\n        <tbody>\n            <tr v-repeat="d:data">\n                <td class="check" v-on="click: select(d)"><i v-class="icon-check-square-o:d.vui_checked, icon-square-o:!d.vui_checked" class="icon"></i></td>\n                <td v-html="unitOp"></td>\n                <td v-repeat="h:struct" v-html="d[h.key]"></td>\n            </tr>\n        </body>\n    </table>\n</div>\n</div>\n<div v-if="pageable" v-component="pagination" v-with="page:pager.page, size:pager.size, total:total"></div>\n';
 });
 require.register("vui/src/components/pagination.html", function(exports, require, module){
 module.exports = '<div class="pagination-wrapper">\n    <ul class="pagination">\n        <li v-if="page>1"><a href="javascript:;" v-on="click:change(page-1)">«</a></li>\n        <li v-class="active:page==p" v-repeat="p:pages"><a href="javascript:;" v-on="click:change(p)" v-text="p"></a></li>\n        <li v-if="page<max"><a href="javascript:;" v-on="click:change(page+1)">»</a></li>\n    </ul>\n    <div class="pageinfo">{{(page-1) * size + 1}}-{{ (page * size > total) ? total: (page * size) }} / {{total}}</div>\n</div>\n';

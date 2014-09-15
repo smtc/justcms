@@ -23,6 +23,10 @@ func AdminMux() *web.Mux {
 	mux.Get("/admin/account/", AccountList)
 	mux.Get("/admin/account/:id", AccountEntity)
 
+	mux.Get("/admin/table/", TableList)
+	mux.Get("/admin/table/:id", TableEntity)
+	mux.Post("/admin/table/", TableSave)
+
 	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+)$`), templateHandler)
 
 	mux.NotFound(utils.NotFound)
@@ -30,7 +34,7 @@ func AdminMux() *web.Mux {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	utils.RenderHtml("/admin/main.html", w, r)
+	utils.Render(w).RenderHtml("/admin/main.html")
 }
 
 /*
@@ -38,7 +42,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 */
 func templateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	temp := fmt.Sprintf("/admin/%s_%s.html", c.URLParams["model"], c.URLParams["fn"])
-	utils.RenderHtml(temp, w, r)
+	utils.Render(w).RenderHtml(temp)
 }
 
 func menuHandler(w http.ResponseWriter, r *http.Request) {
