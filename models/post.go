@@ -6,6 +6,7 @@ import (
 	"github.com/smtc/justcms/database"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -95,53 +96,18 @@ func convertBool(key, value string) (b bool, err error) {
 
 	if vv == "true" {
 		b = true
-	}
-	if vv != "false" {
+	} else if vv != "false" {
 		err = fmt.Errorf("param key %s value %s is NOT boolean.", key, value)
 	}
 	return
 }
 
 // 如果是字符串， 以逗号分割
-func convertIntArray(key, value string) (ret []int, err error) {
-	var ret64 []int64
-
-	if ret64, err = convertInt64Array(key, value); err != nil {
-		return
-	}
-	for _, i := range ret64 {
-		ret = append(ret, int(i))
-	}
-	return
-}
-
-func convertInt64Array(key, value string) (ret []int64, err error) {
-	var (
-		sa  []string
-		num int64
-	)
-
-	sa = strings.Split(value, ",")
-	for _, ele := range sa {
-		ele = strings.TrimSpace(ele)
-		if num, err = strconv.ParseInt(ele, 10, 64); err == nil {
-			ret = append(ret, num)
-		}
-	}
-	return
-
-	err = fmt.Errorf("Cannot convert param %s value %s to []int64", key, value)
-	return
-}
-
-func buildWhereClause() {
-	return
-}
 
 // split "1,2,3" to [1,2,3], [], nil
 //    "-1, -2, -3" to [], [-1,-2,-3,], nil
 //    "1, -2, 3" to [1,3], [-2], nil
-func split_ids(key, ss string) (ia []int64, ea []int64, err error) {
+func splitIds(key, ss string) (ia []int64, ea []int64, err error) {
 	var i int64
 
 	sa := strings.Split(ss, ",")
@@ -156,9 +122,9 @@ func split_ids(key, ss string) (ia []int64, ea []int64, err error) {
 		if i > 0 {
 			ia = append(ia, i)
 		} else if i < 0 {
-			ea = append(ea, i)
+			ea = append(ea, -i)
 		} else {
-			log.Println("split_ids: get invlid id 0: ", s)
+			log.Println("splitIds: get invlid id 0: ", s)
 		}
 	}
 
@@ -171,14 +137,10 @@ func split_ids(key, ss string) (ia []int64, ea []int64, err error) {
 
 // split "a,b,c" to ["a", "b", "c"], rel is 0 (or)
 // split "a+b+c" to ["a", "b", "c"], rel is 1 (and)
-func split_sa(key, ss string) (sa []string, rel int, err error) {
+func splitSa(key, ss string) (sa []string, rel int, err error) {
 	a := strings.Split(ss, ",")
-	if len(a) == 0 {
-		a := strings.Split(ss, "+")
-		if len(a) == 0 {
-			err = fmt.Errorf("param %s is empty: %s.", key, ss)
-			return
-		}
+	if len(a) == 1 {
+		a = strings.Split(ss, "+")
 		rel = 1
 	}
 	sa = make([]string, 0)
@@ -188,6 +150,11 @@ func split_sa(key, ss string) (sa []string, rel int, err error) {
 			sa = append(sa, s)
 		}
 	}
+	if len(sa) == 0 {
+		err = fmt.Errorf("param %s is empty: %s.", key, ss)
+		return
+	}
+
 	return
 }
 
@@ -211,23 +178,27 @@ func split_sa(key, ss string) (sa []string, rel int, err error) {
 // 将category_name__in, category_name__and转化为category__in, category__and
 // 将tag_slug__in, tag_slug__and转化为tag__in, tag__and
 //
-func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
+func parseQuery(r string) (opt map[string]interface{}, err error) {
 	var (
-		num int
-		id  int64
-		ids []int64
-		eds []int64
-		sa  []string
-		rel int
-		ret bool
+		num   int
+		id    int64
+		ids   []int64
+		eds   []int64
+		sa    []string
+		rel   int
+		ret   bool
+		query url.Values
 	)
 
-	r.ParseForm()
+	// ParseQuery has do QueryUnescape
+	if query, err = url.ParseQuery(r); err != nil {
+		return
+	}
+
 	opt = make(map[string]interface{})
 
-	f := r.Form
-	for key, _ := range f {
-		value := f.Get(key)
+	for key, _ := range query {
+		value := query.Get(key)
 		switch key {
 		case "id":
 			fallthrough
@@ -251,7 +222,7 @@ func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
 		case "author":
 			fallthrough
 		case "author_id":
-			if ids, eds, err = split_ids(key, value); err != nil {
+			if ids, eds, err = splitIds(key, value); err != nil {
 				return
 			}
 			if len(ids) == 1 {
@@ -263,7 +234,7 @@ func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
 				opt["author__not_in"] = eds
 			}
 		case "author_name":
-			name := strings.TrimSpace(f.Get(key))
+			name := strings.TrimSpace(query.Get(key))
 			if name == "" {
 				log.Printf("author_name is empty.\n")
 			} else {
@@ -272,7 +243,7 @@ func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
 
 		// category
 		case "cat":
-			if ids, eds, err = split_ids(key, value); err != nil {
+			if ids, eds, err = splitIds(key, value); err != nil {
 				return
 			}
 			if len(ids) == 1 {
@@ -284,7 +255,7 @@ func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
 				opt["category__not_in"] = eds
 			}
 		case "category_name":
-			if sa, rel, err = split_sa(key, value); err != nil {
+			if sa, rel, err = splitSa(key, value); err != nil {
 				return
 			}
 			if len(sa) == 1 {
@@ -322,7 +293,7 @@ func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
 
 		// tag
 		case "tag":
-			if sa, rel, err = split_sa(key, value); err != nil {
+			if sa, rel, err = splitSa(key, value); err != nil {
 				return
 			}
 
@@ -355,7 +326,7 @@ func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
 				}
 			}
 		case "tag_id":
-			if ids, eds, err = split_ids(key, value); err != nil {
+			if ids, eds, err = splitIds(key, value); err != nil {
 				return
 			}
 			if len(ids) == 1 {
@@ -371,7 +342,7 @@ func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
 
 		// post_parent
 		case "post_parent":
-			if ids, eds, err = split_ids(key, value); err != nil {
+			if ids, eds, err = splitIds(key, value); err != nil {
 				return
 			}
 			if len(ids) == 1 {
@@ -383,7 +354,7 @@ func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
 				opt["post_parent__not_in"] = eds
 			}
 		case "post":
-			if ids, eds, err = split_ids(key, value); err != nil {
+			if ids, eds, err = splitIds(key, value); err != nil {
 				return
 			}
 			if len(ids) == 1 {
@@ -410,7 +381,7 @@ func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
 
 		// post_type
 		case "post_type":
-			if sa, rel, err = split_sa(key, value); err != nil {
+			if sa, rel, err = splitSa(key, value); err != nil {
 				return
 			}
 			if len(sa) == 1 {
@@ -425,7 +396,7 @@ func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
 
 		// post_status
 		case "post_status":
-			if sa, rel, err = split_sa(key, value); err != nil {
+			if sa, rel, err = splitSa(key, value); err != nil {
 				return
 			}
 			if len(sa) == 1 {
@@ -511,6 +482,10 @@ func parseQuery(r *http.Request) (opt map[string]interface{}, err error) {
 	return
 }
 
+func buildWhereClause() (where string, err error) {
+	return
+}
+
 // get posts
 // main query function for posts
 // param:
@@ -524,7 +499,7 @@ func GetPosts(req *http.Request) (posts []*Post, err error) {
 		opt  map[string]interface{}
 	)
 
-	if opt, err = parseQuery(req); err != nil {
+	if opt, err = parseQuery(req.URL.RawQuery); err != nil {
 		return
 	}
 
@@ -550,8 +525,4 @@ func GetPosts(req *http.Request) (posts []*Post, err error) {
 	err = db.Find(&posts).Error
 
 	return
-}
-
-func mergePosts() {
-
 }
