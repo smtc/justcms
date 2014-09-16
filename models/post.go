@@ -20,7 +20,7 @@ type Post struct {
 	AuthorName string    `sql:"size:40" json:"author_name"`
 	Title      string    `sql:"size:60" json:"title"`
 	Content    string    `sql:"size:100000" json:"content"`
-	Status     string    `sql:"size:20" json:"status"`
+	PostStatus string    `sql:"size:20" json:"post_status"`
 	Excerpt    string    `sql:"size:500" json:"excerpt"`
 	PostAt     time.Time `json:"post_at"`
 	PublishAt  time.Time `json:"publish_at"`
@@ -175,6 +175,7 @@ func splitSa(key, ss string) (sa []string, rel int, err error) {
 //   nopaging posts_per_page posts_per_archive_page offset page ignore_sticky_posts
 //   date__before date__after
 
+// 将author_name 转化为author__in, author__and
 // 将category_name__in, category_name__and转化为category__in, category__and
 // 将tag_slug__in, tag_slug__and转化为tag__in, tag__and
 //
@@ -234,11 +235,38 @@ func parseQuery(r string) (opt map[string]interface{}, err error) {
 				opt["author__not_in"] = eds
 			}
 		case "author_name":
-			name := strings.TrimSpace(query.Get(key))
-			if name == "" {
-				log.Printf("author_name is empty.\n")
+			if sa, rel, err = splitSa(key, value); err != nil {
+				return
+			}
+			if len(sa) == 1 {
+				id, err = getAuthorIdByName(sa[0])
+				if err != nil {
+					return
+				}
+				opt["author"] = id
 			} else {
-				opt["author_name"] = name
+				ids = make([]int64, 0)
+				for _, name := range sa {
+					aid, err := getAuthorIdByName(name)
+					if err != nil {
+						log.Printf("author name %s is not exist.\n", name)
+					}
+					ids = append(ids, aid)
+				}
+				if len(ids) == 0 {
+					err = fmt.Errorf("No valid author name: %s", value)
+					return
+				}
+				if len(ids) == 1 {
+					opt["author"] = ids[0]
+				} else {
+					if rel == 0 {
+						opt["author__in"] = ids
+					} else {
+						err = fmt.Errorf("no post with multi author currently.")
+						return
+					}
+				}
 			}
 
 		// category
@@ -304,7 +332,7 @@ func parseQuery(r string) (opt map[string]interface{}, err error) {
 					err = fmt.Errorf("tag name %s not exist.", tagname)
 					return
 				}
-				opt["tag_id"] = id
+				opt["tag"] = id
 			} else {
 				ids = make([]int64, 0)
 				for _, name := range sa {
@@ -318,11 +346,11 @@ func parseQuery(r string) (opt map[string]interface{}, err error) {
 					err = fmt.Errorf("No valid tag: %s", value)
 					return
 				} else if len(ids) == 1 {
-					opt["tag_id"] = ids[0]
+					opt["tag"] = ids[0]
 				} else if rel == 0 {
-					opt["tag_id__in"] = ids
+					opt["tag__in"] = ids
 				} else {
-					opt["tag_id__and"] = ids
+					opt["tag__and"] = ids
 				}
 			}
 		case "tag_id":
@@ -362,7 +390,7 @@ func parseQuery(r string) (opt map[string]interface{}, err error) {
 				opt["id"] = ids[0]
 				return
 			} else if len(ids) > 1 {
-				opt["post__id"] = ids
+				opt["post__in"] = ids
 			}
 
 			if len(eds) != 0 {
@@ -469,20 +497,61 @@ func parseQuery(r string) (opt map[string]interface{}, err error) {
 		// Date Parameters
 		case "date_before":
 		case "date_after":
+		case "menu_order":
+			opt["menu_order"] = value
 		}
 	}
 
-	if opt["post_type"] == nil {
+	if opt["post_type"] == nil && opt["post_type__in"] == nil {
 		opt["post_type"] = "post"
 	}
-	if opt["post_status"] == nil {
+	if opt["post_status"] == nil && opt["post_status__in"] == nil {
 		opt["post_staus"] = "published"
 	}
 
 	return
 }
 
-func buildWhereClause() (where string, err error) {
+func sqlIn(ar []int64) (s string) {
+	for i, v := range ar {
+		if i != len(ar) {
+			s += fmt.Sprintf("%d,", v)
+		} else {
+			s += fmt.Sprintf("%d", v)
+		}
+	}
+	return
+}
+
+// author, author__in, author__not_in
+// cat, category__in, category__not_in, category__and
+// tag, tag__in, tag__not_in, tag__and
+// post_parent, post_parent__in, post_parent__not_in
+// post__in, post__not_in
+// has_password
+// post_password
+// post_type, post_type__in
+// post_status, post_status__in
+// nopaging
+// posts_per_page
+// posts_per_archive_page
+// offset
+// page
+// ignore_sticky_posts
+// order
+// orderby
+// date_before, date_after
+// menu_order
+func buildWhereClause(opt map[string]interface{}) (clause []string, err error) {
+	var (
+		where = ""
+		join  = ""
+	)
+
+	if opt["menu_order"] != nil {
+		where += " And menu_order = " + opt["menu_order"].(string)
+	}
+
 	return
 }
 
@@ -494,14 +563,17 @@ func buildWhereClause() (where string, err error) {
 //   wordperss WP_Query
 //
 func GetPosts(req *http.Request) (posts []*Post, err error) {
-	var (
-		post Post
-		opt  map[string]interface{}
-	)
+	var opt map[string]interface{}
 
 	if opt, err = parseQuery(req.URL.RawQuery); err != nil {
 		return
 	}
+
+	return getPosts(opt)
+}
+
+func getPosts(opt map[string]interface{}) (posts []*Post, err error) {
+	var post Post
 
 	db := database.GetDB("")
 
@@ -513,6 +585,7 @@ func GetPosts(req *http.Request) (posts []*Post, err error) {
 		posts = append(posts, &post)
 		return
 	}
+
 	if opt["post_name"] != nil {
 		if err = db.Where("post_name=?", opt["post_name"]).Find(&post).Error; err != nil {
 			return
