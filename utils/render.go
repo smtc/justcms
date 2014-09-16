@@ -25,15 +25,15 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 
 // ==============================================================
 
-type render struct {
+type RenderStruct struct {
 	http.ResponseWriter
 }
 
-func Render(w http.ResponseWriter) *render {
-	return &render{w}
+func Render(w http.ResponseWriter) *RenderStruct {
+	return &RenderStruct{w}
 }
 
-func (w *render) RenderHtml(path string) {
+func (w *RenderStruct) RenderHtml(path string) {
 	buf, err := ioutil.ReadFile(templatePath + path)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -42,7 +42,7 @@ func (w *render) RenderHtml(path string) {
 	w.Write(buf)
 }
 
-func (w *render) RenderPage(v interface{}) {
+func (w *RenderStruct) RenderPage(v interface{}) {
 	type Page struct {
 		Status  int         `json:"status"`
 		Data    interface{} `json:"data"`
@@ -61,7 +61,7 @@ func (w *render) RenderPage(v interface{}) {
 	w.Write(buf)
 }
 
-func (w *render) RenderJson(v interface{}, status int) {
+func (w *RenderStruct) RenderJson(v interface{}, status int) {
 	type Result struct {
 		Status int         `json:"status"`
 		Data   interface{} `json:"data"`
@@ -76,7 +76,7 @@ func (w *render) RenderJson(v interface{}, status int) {
 	w.Write(buf)
 }
 
-func (w *render) RenderError(err string) {
+func (w *RenderStruct) RenderError(err string) {
 	type Result struct {
 		Status int    `json:"status"`
 		Errors string `json:"errors"`

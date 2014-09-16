@@ -15,8 +15,8 @@ func Request(r *http.Request) *RequestStruct {
 	return &req
 }
 
-func (rs *RequestStruct) FormatBody(v interface{}) error {
+func (r *RequestStruct) FormatBody(v interface{}) error {
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(rs.Body)
+	buf.ReadFrom(r.Body)
 	return ToStruct(buf.Bytes(), v)
 }

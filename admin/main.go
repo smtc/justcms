@@ -27,14 +27,18 @@ func AdminMux() *web.Mux {
 	mux.Get("/admin/table/:id", TableEntity)
 	mux.Post("/admin/table/", TableSave)
 
+	mux.Get(regexp.MustCompile(`^/admin/column/(?P<table>.+)/$`), ColumnList)
+
+	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+):(?P<param>.+)$`), templateHandler)
 	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+)$`), templateHandler)
 
 	mux.NotFound(utils.NotFound)
 	return mux
 }
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	utils.Render(w).RenderHtml("/admin/main.html")
+func indexHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	handler := utils.HttpHandler(c, w, r)
+	handler.W.RenderHtml("/admin/main.html")
 }
 
 /*

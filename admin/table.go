@@ -34,14 +34,15 @@ func TableEntity(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func TableSave(c web.C, w http.ResponseWriter, r *http.Request) {
-	render := utils.Render(w)
 	var (
-		t   models.Table
-		err error
+		t       models.Table
+		err     error
+		render  = utils.Render(w)
+		request = utils.Request(r)
 	)
 
 	//if err = json.NewDecoder(r.Body).Decode(&t); err != nil {
-	if err = utils.Request(r).FormatBody(&t); err != nil {
+	if err = request.FormatBody(&t); err != nil {
 		log.Println(err)
 		render.RenderError(err.Error())
 		return
