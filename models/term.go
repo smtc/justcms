@@ -102,5 +102,6 @@ func getTagIdByName(tag string) (id int64, err error) {
 		return
 	}
 	id = term.Id
+
 	return
 }
