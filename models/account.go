@@ -91,7 +91,7 @@ func AccountList(page, size int, filter *map[string]interface{}) ([]Account, err
 // get account id by name
 func getAuthorIdByName(name string) (id int64, err error) {
 	var acct Account
-	db := database.GetDB(account_db)
+	db := getAccountDB()
 	err = db.Where("name=?", name).First(&acct).Error
 	id = acct.Id
 	return

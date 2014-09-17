@@ -1,9 +1,10 @@
 package models
 
 import (
-	"github.com/smtc/justcms/database"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/smtc/justcms/database"
+	_ "github.com/stretchr/testify/assert"
 )
 
 func TestWhere(t *testing.T) {
