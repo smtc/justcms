@@ -1,12 +1,20 @@
 package models
 
-import "github.com/smtc/justcms/database"
-
-var (
-	account_db = ""
-	post_db    = ""
-	dynamic_db = ""
+import (
+	"github.com/jinzhu/gorm"
+	"github.com/smtc/justcms/database"
 )
+
+func GetDB(model string) *gorm.DB {
+	db := ""
+	switch model {
+	case "table":
+		db = ""
+	case "account":
+		db = ""
+	}
+	return database.GetDB(db)
+}
 
 func InitDB() {
 	db := database.GetDB("")

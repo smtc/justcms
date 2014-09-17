@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/smtc/goutils"
 	"github.com/smtc/justcms/database"
-	"github.com/smtc/justcms/utils"
 )
 
 var (
@@ -25,7 +25,7 @@ type Table struct {
 }
 
 func getTableDB() *gorm.DB {
-	return database.GetDB(dynamic_db)
+	return database.GetDB("table")
 }
 
 func (t *Table) Exist() bool {
@@ -82,12 +82,10 @@ func TableDelete(where string) {
 	db.Where(where).Delete(&Table{})
 }
 
-func TableList() ([]Table, error) {
+func TableList(tbls *[]Table) error {
 	db := getTableDB()
-	var tbls []Table
-
-	err := db.Find(&tbls).Error
-	return tbls, err
+	err := db.Find(tbls).Error
+	return err
 }
 
 func (t *Table) Field(name string) Column {
@@ -101,6 +99,6 @@ func (t *Table) Field(name string) Column {
 }
 
 func (t Table) MarshalJSON() ([]byte, error) {
-	j, _ := utils.ToJsonOnly(t)
+	j, _ := goutils.ToJsonOnly(t)
 	return []byte(j), nil
 }

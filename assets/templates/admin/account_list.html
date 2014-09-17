@@ -16,6 +16,7 @@
         <table class="table table-listed">
             <thead>
                 <tr>
+                    <th v-on="click: selectAll"><i v-class="icon-check-square-o:allChecked, icon-square-o:!allChecked" class="icon"></i></th>
                     <th style="width: 50px;"></th>
                     <th>Email</th>
                     <th>用户名</th>
@@ -27,6 +28,7 @@
             </thead>
             <tbody>
                 <tr v-repeat="item:data">
+                    <td v-on="click: select(this)"><i v-class="icon-check-square-o:vui_checked, icon-square-o:!vui_checked" class="icon"></i></td>
                     <td></td>
                     <td>{{item.email}}</td>
                     <td>{{item.name}}</td>

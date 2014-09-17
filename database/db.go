@@ -55,7 +55,7 @@ func opendb(dbname, dbuser, dbpass string) (gorm.DB, error) {
 
 	dbtype = strings.ToLower(config.GetStringDefault("dbtype", "mysql"))
 	if dbtype == "mysql" {
-		dsn = fmt.Sprintf("%s:%s@%s(%s:%d)/%s?charset=utf8&parseTime=True",
+		dsn = fmt.Sprintf("%s:%s@%s(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
 			dbuser,
 			dbpass,
 			config.GetStringDefault("dbproto", "tcp"),

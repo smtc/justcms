@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/smtc/justcms/database"
+	"github.com/jinzhu/gorm"
 )
 
 // 账号管理
@@ -56,28 +56,32 @@ type AccountMeta struct {
 	Plugin       string `sql:"size:180"`
 }
 
+func getAccountDB() *gorm.DB {
+	return GetDB("account")
+}
+
 func (a *Account) Get(id int64) error {
-	db := database.GetDB(account_db)
+	db := getAccountDB()
 	return db.First(a, id).Error
 }
 
 func (a *Account) Save() error {
-	db := database.GetDB(account_db)
+	db := getAccountDB()
 	return db.Save(a).Error
 }
 
 func (a *Account) Delete() error {
-	db := database.GetDB(account_db)
+	db := getAccountDB()
 	return db.Delete(a).Error
 }
 
 func AccountDelete(where string) {
-	db := database.GetDB(account_db)
+	db := getAccountDB()
 	db.Where(where).Delete(&Account{})
 }
 
-func AccountList(page, size int, filter map[string]interface{}) ([]Account, error) {
-	db := database.GetDB(account_db)
+func AccountList(page, size int, filter *map[string]interface{}) ([]Account, error) {
+	db := getAccountDB()
 	var accts []Account
 
 	err := db.Offset(page * size).Limit(size).Find(&accts).Error

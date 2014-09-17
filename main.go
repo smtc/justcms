@@ -7,8 +7,8 @@ import (
 
 	"github.com/guotie/config"
 	"github.com/guotie/deferinit"
+	"github.com/smtc/goutils"
 	"github.com/smtc/justcms/models"
-	"github.com/smtc/justcms/utils"
 	"github.com/zenazn/goji"
 
 	"github.com/flosch/pongo2"
@@ -36,7 +36,7 @@ func run() {
 	// static files
 	goji.Get("/assets/*", http.FileServer(http.Dir("./")))
 
-	goji.NotFound(utils.NotFound)
+	goji.NotFound(goutils.NotFound)
 
 	goji.Get("/", index)
 

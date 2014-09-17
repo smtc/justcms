@@ -4,57 +4,60 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/smtc/goutils"
 	"github.com/smtc/justcms/models"
-	"github.com/smtc/justcms/utils"
 	"github.com/zenazn/goji/web"
 )
 
-func TableList(w http.ResponseWriter, r *http.Request) {
-	models, _ := models.TableList()
-	list, _ := utils.ToMapList(models, []string{}, utils.FilterModeExclude)
-	utils.Render(w).RenderPage(list)
+func TableList(c web.C, w http.ResponseWriter, r *http.Request) {
+	h := goutils.HttpHandler(c, w, r)
+	var tbls []models.Table
+	if err := models.TableList(&tbls); err != nil {
+		h.RenderError(err.Error())
+		return
+	}
+	list, _ := goutils.ToMapList(tbls, []string{}, goutils.FilterModeExclude)
+	h.RenderPage(list)
 }
 
 func TableEntity(c web.C, w http.ResponseWriter, r *http.Request) {
-	render := utils.Render(w)
-	param := utils.Getter(c.URLParams)
-	id := param.GetInt64("id", 0)
+	h := goutils.HttpHandler(c, w, r)
+	id := h.Param.GetInt64("id", 0)
 	if id == 0 {
-		render.RenderJson(nil, 0)
+		h.RenderJson(nil, 0)
 		return
 	}
 
 	var t models.Table
 	if err := t.Get(id); err != nil {
-		render.RenderError(err.Error())
+		h.RenderError(err.Error())
 		return
 	}
 
-	render.RenderJson(t, 1)
+	h.RenderJson(t, 1)
 }
 
 func TableSave(c web.C, w http.ResponseWriter, r *http.Request) {
 	var (
-		t       models.Table
-		err     error
-		render  = utils.Render(w)
-		request = utils.Request(r)
+		t   models.Table
+		err error
+		h   = goutils.HttpHandler(c, w, r)
 	)
 
 	//if err = json.NewDecoder(r.Body).Decode(&t); err != nil {
-	if err = request.FormatBody(&t); err != nil {
+	if err = h.FormatBody(&t); err != nil {
 		log.Println(err)
-		render.RenderError(err.Error())
+		h.RenderError(err.Error())
 		return
 	}
 
 	err = t.Save()
 	if err != nil {
 		log.Println(err)
-		render.RenderError(err.Error())
+		h.RenderError(err.Error())
 		return
 
 	}
 
-	render.RenderJson(t, 1)
+	h.RenderJson(t, 1)
 }
