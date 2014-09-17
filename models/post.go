@@ -167,6 +167,7 @@ func splitSa(key, ss string) (sa []string, rel int, err error) {
 //   post__in post__not_in
 //   author author_id author_name author__in author__not_in
 //   cat category_name category__in category__not_in category__and category_name__in category_name__not_in
+//   cat_children
 //   tag tag_id tag__in tag__not_in tag__and tag_slug__in tag_slug__not_in
 //   post_parent post_parent__in post_parent__not_in
 //   has_password
@@ -282,6 +283,15 @@ func parseQuery(r string) (opt map[string]interface{}, err error) {
 			}
 			if len(eds) > 0 {
 				opt["category__not_in"] = eds
+			}
+		case "cat_children":
+			cc := strings.ToLower(value)
+			if cc == "true" || cc == "1" {
+				opt["cat_children"] = true
+			} else if cc == "false" || cc == "0" {
+				opt["cat_children"] = false
+			} else {
+				log.Println("param cat_children invalid " + value)
 			}
 		case "category_name":
 			if sa, rel, err = splitSa(key, value); err != nil {
@@ -524,6 +534,15 @@ func sqlIn(ar []int64) (s string) {
 	return
 }
 
+type queryClause struct {
+	join     string
+	where    string
+	limits   string
+	groupby  string
+	orderby  string
+	distinct string
+}
+
 // author, author__in, author__not_in
 // cat, category__in, category__not_in, category__and
 // tag, tag__in, tag__not_in, tag__and
@@ -558,6 +577,43 @@ func buildWhereClause(opt map[string]interface{}) (clause []string, err error) {
 	return
 }
 
+// 构建taxQuery数组
+func buildTaxQuery(opt map[string]interface{}) []taxQuery {
+	// category has children
+	cc := false
+	ta := make([]taxQuery, 0)
+	if opt["cat_children"] != nil && opt["cat_children"].(bool) {
+		cc = true
+	}
+
+	for key, value := range opt {
+		switch key {
+		case "tag__in":
+			q := taxQuery{"tag", value.([]int64), "IN", false}
+			ta = append(ta, q)
+		case "tag__not_in":
+			q := taxQuery{"tag", value.([]int64), "NOT IN", false}
+			ta = append(ta, q)
+		case "tag__and":
+			q := taxQuery{"tag", value.([]int64), "AND", false}
+			ta = append(ta, q)
+
+		// category
+		case "category__in":
+			q := taxQuery{"category", value.([]int64), "IN", cc}
+			ta = append(ta, q)
+		case "category__not_in":
+			q := taxQuery{"category", value.([]int64), "NOT IN", cc}
+			ta = append(ta, q)
+		case "category__and":
+			q := taxQuery{"category", value.([]int64), "AND", cc}
+			ta = append(ta, q)
+		}
+	}
+
+	return ta
+}
+
 // get posts
 // main query function for posts
 // param:
@@ -576,7 +632,9 @@ func GetPosts(req *http.Request) (posts []*Post, err error) {
 }
 
 func getPosts(opt map[string]interface{}) (posts []*Post, err error) {
-	var post Post
+	var (
+		post Post
+	)
 
 	db := database.GetDB("")
 
