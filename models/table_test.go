@@ -76,4 +76,8 @@ func TestTable(t *testing.T) {
 	if len(table3.Columns) != 4 {
 		t.Fatal("table3's Column length should be 4 ", len(table3.Columns))
 	}
+
+	if err := table3.Delete(); err != nil {
+		t.Fatal(err.Error())
+	}
 }

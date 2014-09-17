@@ -74,6 +74,9 @@ func (t *Table) Save() error {
 
 func (t *Table) Delete() error {
 	db := getTableDB()
+	if err := db.Where("table_id = ?", t.Id).Delete(Column{}).Error; err != nil {
+		return err
+	}
 	return db.Delete(t).Error
 }
 
