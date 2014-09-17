@@ -48,7 +48,7 @@ func (t *Table) Get(id int64) error {
 func (t *Table) GetColumns() error {
 	db := getTableDB()
 	t.Columns = nil
-	return db.Model(t).Related(&t.Columns).Error
+	return db.Model(t).Related(&t.Columns).Order("name").Error
 }
 
 func (t *Table) Refresh() error {
@@ -61,15 +61,33 @@ func (t *Table) Refresh() error {
 }
 
 func (t *Table) Save() error {
-	db := getTableDB()
+	var (
+		db     = getTableDB()
+		isNew  = false
+		column Column
+	)
 	if t.Exist() {
 		return fmt.Errorf("table '%v' is existed", t.Name)
 	}
 	if t.Id == 0 {
 		t.CreatedAt = time.Now()
+		isNew = true
 	}
 	t.EditAt = time.Now()
-	return db.Save(t).Error
+	if err := db.Save(t).Error; err != nil {
+		return err
+	}
+
+	if isNew {
+		column.Name = "id"
+		column.Alias = "id"
+		column.Type = database.BIGINT
+		column.PrimaryKey = true
+		column.TableId = t.Id
+		column.NotNull = true
+		column.Save()
+	}
+	return nil
 }
 
 func (t *Table) Delete() error {
@@ -104,4 +122,14 @@ func (t *Table) Field(name string) Column {
 func (t Table) MarshalJSON() ([]byte, error) {
 	j, _ := goutils.ToJsonOnly(t)
 	return []byte(j), nil
+}
+
+func (t *Table) CreateTable() error {
+	var sql []string
+	sql = append(sql, fmt.Sprintf("CREATE table `%v` (", t.Name))
+	return nil
+}
+
+func (t *Table) MigrateTable() error {
+	return nil
 }

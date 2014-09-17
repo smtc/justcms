@@ -8,9 +8,7 @@ import (
 func GetDB(model string) *gorm.DB {
 	db := ""
 	switch model {
-	case "table":
-		db = ""
-	case "account":
+	case "table", "account":
 		db = ""
 	}
 	return database.GetDB(db)

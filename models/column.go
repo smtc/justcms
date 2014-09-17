@@ -9,16 +9,19 @@ import (
 )
 
 type Column struct {
-	Id        int64     `json:"id"`
-	TableId   int64     `sql:"not null" json:"table_id"`
-	Name      string    `sql:"size:45;not null" json:"name"`
-	Alias     string    `sql:"size:45" json:"alias"`
-	Des       string    `sql:"size:512" json:"des"`
-	Type      string    `sql:"size:20" json:"type"`
-	Size      int       `json:"size"`
-	Filter    string    `sql:"size:127" json:"filter"`
-	CreatedAt time.Time `json:"created_at"`
-	EditAt    time.Time `json:"edit_at"`
+	Id           int64     `json:"id"`
+	TableId      int64     `sql:"not null" json:"table_id"`
+	Name         string    `sql:"size:45;not null" json:"name"`
+	Alias        string    `sql:"size:45" json:"alias"`
+	Des          string    `sql:"size:512" json:"des"`
+	Type         string    `sql:"size:20" json:"type"`
+	Size         int       `json:"size"`
+	Filter       string    `sql:"size:127" json:"filter"`
+	NotNull      bool      `json:"not_null"`
+	PrimaryKey   bool      `json:"primary_key"`
+	DefaultValue string    `sql:"size:512" json:"default_value"`
+	CreatedAt    time.Time `json:"created_at"`
+	EditAt       time.Time `json:"edit_at"`
 }
 
 func getColumnDB() *gorm.DB {
@@ -41,6 +44,9 @@ func (c *Column) Save() error {
 	db := getColumnDB()
 	if c.Exist() {
 		return fmt.Errorf("column '%v' is existed", c.Name)
+	}
+	if c.Id == 0 {
+		c.CreatedAt = time.Now()
 	}
 	c.EditAt = time.Now()
 	return db.Save(c).Error
