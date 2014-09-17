@@ -523,6 +523,15 @@ func sqlIn(ar []int64) (s string) {
 	return
 }
 
+type queryClause struct {
+	join     string
+	where    string
+	limits   string
+	groupby  string
+	orderby  string
+	distinct string
+}
+
 // author, author__in, author__not_in
 // cat, category__in, category__not_in, category__and
 // tag, tag__in, tag__not_in, tag__and
