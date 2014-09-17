@@ -2,7 +2,9 @@ package models
 
 import (
 	//"time"
+	"fmt"
 	"github.com/smtc/justcms/database"
+	"strings"
 )
 
 /*
@@ -103,5 +105,102 @@ func getTagIdByName(tag string) (id int64, err error) {
 	}
 	id = term.Id
 
+	return
+}
+
+type taxQuery struct {
+	taxonomy        string
+	terms           []int64
+	operator        string
+	includeChildren bool
+	//field           string
+}
+
+// 用,把数组t连接起来
+func _termString(t []int64) string {
+	s := ""
+	for i, v := range t {
+		s += fmt.Sprint(v)
+		if i != len(t)-1 {
+			s += ","
+		}
+	}
+	return s
+}
+
+// ta: taxQuery array
+// relation: OR, AND, default is AND
+// tableName: default posts
+// fieldName: default id
+func getTaxSql(ta []taxQuery, relation, tableName, fieldName string) (qc queryClause, err error) {
+	var (
+		join  string
+		where []string = make([]string, 0)
+	)
+	if relation == "" {
+		relation = "AND"
+	}
+
+	for i, tq := range ta {
+		terms := _termString(tq.terms)
+		switch tq.operator {
+		case "IN":
+			alias := ""
+			if i == 0 {
+				alias = "term_relations"
+			} else {
+				alias = "tt" + fmt.Sprint(i)
+			}
+			/*
+				$join .= " INNER JOIN $wpdb->term_relationships";
+				$join .= $i ? " AS $alias" : '';
+				$join .= " ON ($primary_table.$primary_id_column = $alias.object_id)";
+
+				$where[] = "$alias.term_taxonomy_id $operator ($terms)";
+			*/
+			join += " INNER JOIN term_relations"
+			if i != 0 {
+				join += " AS " + alias
+			}
+			join += fmt.Sprintf(" ON (%s.%s=%s.object_id)", tableName, fieldName, alias)
+			where = append(where, fmt.Sprintf("%s.term_id IN (%s)", alias, terms))
+		case "NOT IN":
+			/*
+				$where[] = "$primary_table.$primary_id_column NOT IN (
+							SELECT object_id
+							FROM $wpdb->term_relationships
+							WHERE term_taxonomy_id IN ($terms)
+						)";
+			*/
+			where = append(where, fmt.Sprintf("%s.%s NOT IN (SELECT object_id FROM term_relations WHERE term_id IN (%s))",
+				tableName, fieldName, terms))
+		case "AND":
+			/*
+				$num_terms = count( $terms );
+
+						$terms = implode( ',', $terms );
+
+						$where[] = "(
+							SELECT COUNT(1)
+							FROM $wpdb->term_relationships
+							WHERE term_taxonomy_id IN ($terms)
+							AND object_id = $primary_table.$primary_id_column
+						) = $num_terms";
+			*/
+			where = append(where, fmt.Sprintf(`(
+							SELECT COUNT(1)
+							FROM term_relations
+							WHERE term_id IN (%s)
+							AND object_id = %s.%s
+						) = %d`, terms, tableName, fieldName, len(tq.terms)))
+
+		}
+	}
+	if len(where) == 0 {
+		qc.where = ""
+	} else {
+		qc.where = " AND ( " + strings.Join(where, " "+relation+" ") + " )"
+	}
+	qc.join = join
 	return
 }
