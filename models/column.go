@@ -22,7 +22,7 @@ type Column struct {
 }
 
 func getColumnDB() *gorm.DB {
-	return database.GetDB(dynamic_db)
+	return database.GetDB("column")
 }
 
 func (c *Column) Exist() bool {
@@ -51,15 +51,24 @@ func (c *Column) Delete() error {
 	return db.Delete(c).Error
 }
 
-func ColumnDelete(where string) {
+func ColumnDelete(where string, data interface{}) error {
 	db := getColumnDB()
-	db.Where(where).Delete(&Column{})
+	return db.Where(where, data).Delete(&Column{}).Error
 }
 
-func ColumnList(tableId int64) ([]Column, error) {
+func ColumnList(tableIds []int64) ([]Column, error) {
 	db := getColumnDB()
-	var cols []Column
+	var (
+		cols  []Column
+		where string
+	)
 
-	err := db.Where("table_id=?", tableId).Find(&cols).Error
+	if len(tableIds) == 1 {
+		where = "table_id = ?"
+	} else {
+		where = "table_id in (?)"
+	}
+
+	err := db.Where(where, tableIds).Find(&cols).Error
 	return cols, err
 }

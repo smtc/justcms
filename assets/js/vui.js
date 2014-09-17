@@ -6046,6 +6046,7 @@ Date.prototype.format = function (fmt) { //author: meizz
     return fmt;
 }
 
+
 });
 require.register("vui/src/main.js", function(exports, require, module){
 var Vue             = require('vue'),
@@ -6060,6 +6061,7 @@ var Vue             = require('vue'),
     form            = require('./components/form'),
     page            = require('./components/page'),
     lang            = require('./lang/lang'),
+    string          = require('./filters/string'),
     $data           = {},
     initialized     = false,
     vm
@@ -6103,6 +6105,7 @@ function init() {
         },
 
         filters: {
+            format: string.format
         },
 
         components: components,
@@ -7153,6 +7156,16 @@ function substitute(str, obj) {
     })
 }
 
+
+function format(str, arr) {
+    return str.replace(/{(\d+)}/g, function(match, number) { 
+        return typeof arr[number] != 'undefined'
+            ? arr[number] 
+            : match
+    })
+}
+
+
 var hasClassList    = 'classList' in document.documentElement,
     urlParsingNode  = document.createElement("a")
 
@@ -7221,7 +7234,7 @@ if (isNaN(msie)) {
 function urlResolve(url, fixHash) {
     var href = url,
         pathname,
-        colon = {}
+        colon = []
 
     if (msie) {
         // Normalize before parse.  Refer Implementation Notes on why this is
@@ -7243,8 +7256,8 @@ function urlResolve(url, fixHash) {
 
     pathname = urlParsingNode.pathname
     if (pathname.indexOf(':') >= 0) {
-        var cstr = pathname.substr(pathname.indexOf(':') + 1)
-        colon = parseKeyValue(cstr)
+        var cs = pathname.substr(pathname.indexOf(':') + 1)
+        colon = cs.split('/')
     }
 
     // urlParsingNode provides the UrlUtils interface - http://url.spec.whatwg.org/#urlutils
@@ -7365,6 +7378,7 @@ module.exports = {
     'encodeUriQuery': encodeUriQuery,
     'encodeUriSegment': encodeUriSegment,
     'substitute': substitute,
+    'format': format,
     isDescendant: isDescendant,
     addClass: addClass,
     hasClass: hasClass,
@@ -7864,7 +7878,7 @@ module.exports = {
 require.register("vui/src/components/form.js", function(exports, require, module){
 var utils       = require('../utils'),
     request     = require('../request'),
-    location    = require('../location'),
+    _location    = require('../location'),
     lang        = require('../lang/lang'),
     loading     = require('./loading'),
     message     = require('./message')
@@ -8004,15 +8018,19 @@ var component = {
             }.bind(this), true)
         }
 
+        if (this.src) {
+            this.colon = _location.node(true).colon
+            this.src = utils.format(this.src, this.colon)
+        }
     },
 
     ready: function () {
-        var node = location.node(true),
+        var node = _location.node(true),
             search = node.search,
             hash = node.hash
         request.get(this.src + hash).query(search).end(function (res) {
             if (res.status === 200) {
-                if (res.body.status === 1)
+                if (res.body.status === 1 || res.body.data)
                     this.model = res.body.data || {}
                 else if (res.body.errors)
                     message.error(res.body.errors)
@@ -8609,7 +8627,12 @@ module.exports = {
         } else if (!this.options && src) {
             this.options = {}
             request.get(src).end(function (res) {
-                this.options = formatOption(res.body)
+                if (res.body instanceof Array) {
+                    this.options = formatOption(res.body)
+                } else if (res.body.status === 1) {
+                    this.options = formatOption(res.body.data)
+                }
+                //this.options = formatOption(res.body)
                 judge.call(this)
             }.bind(this))
         }
@@ -8633,6 +8656,10 @@ module.exports = {
             if (this.type === 'radio')
                 this.$el.querySelector('input[value="' + this.value + '"]').checked = true
             else {
+                if (typeof value === 'string') {
+                    if (value === '') this.value = []
+                    else this.value = this.value.split(',')
+                }
                 utils.forEach(this.$el.querySelectorAll('input[type="checkbox"]'), function (el) {
                     el.checked = value.toString() === el.value.toString() || contains(value, el.value)
                 }.bind(this))
@@ -8949,8 +8976,8 @@ var component = {
         }
 
         if (this.src) {
-            var colon = _location.node(true).colon
-            this.src = utils.substitute(this.src, colon)
+            this.colon = _location.node(true).colon
+            this.src = utils.format(this.src, this.colon)
         }
     },
     ready: function () {
@@ -9095,7 +9122,11 @@ module.exports = {
             this.options = lang.get('boolSelect')
         } else if (this.src) {
             request.get(this.src).end(function (res) {
-                self.options = res.body
+                if (res.body instanceof Array) {
+                    self.options = res.body
+                } else if (res.body.status === 1) {
+                    self.options = res.body.data
+                }
                 self.setValue(self.value)
             })
         }
@@ -9296,6 +9327,17 @@ module.exports = {
     tree:   tree,
     folder: folder,
     file:   file
+}
+
+});
+require.register("vui/src/filters/string.js", function(exports, require, module){
+var utils = require('../utils')
+
+module.exports = {
+    format: function (value, arr) {
+        arr = arr || []
+        return utils.format(value, arr)
+    }
 }
 
 });

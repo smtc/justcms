@@ -3,13 +3,14 @@ package models
 import (
 	"fmt"
 	//"github.com/jinzhu/gorm"
-	"github.com/smtc/justcms/database"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/smtc/justcms/database"
 )
 
 // Post table
@@ -556,6 +557,8 @@ func buildWhereClause(opt map[string]interface{}) (clause []string, err error) {
 		where = ""
 		join  = ""
 	)
+
+	_ = join
 
 	if opt["menu_order"] != nil {
 		where += " And menu_order = " + opt["menu_order"].(string)
