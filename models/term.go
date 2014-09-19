@@ -116,18 +116,6 @@ type taxQuery struct {
 	//field           string
 }
 
-// 用,把数组t连接起来
-func _termString(t []int64) string {
-	s := ""
-	for i, v := range t {
-		s += fmt.Sprint(v)
-		if i != len(t)-1 {
-			s += ","
-		}
-	}
-	return s
-}
-
 // ta: taxQuery array
 // relation: OR, AND, default is AND
 // tableName: default posts
@@ -142,7 +130,7 @@ func getTaxSql(ta []taxQuery, relation, tableName, fieldName string) (qc queryCl
 	}
 
 	for i, tq := range ta {
-		terms := _termString(tq.terms)
+		terms := conjectToString(tq.terms)
 		switch tq.operator {
 		case "IN":
 			alias := ""

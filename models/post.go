@@ -495,12 +495,12 @@ func parseQuery(r string) (opt map[string]interface{}, err error) {
 		case "order":
 			value = strings.ToLower(strings.TrimSpace(value))
 			if value == "asc" {
-				opt["order"] = "asc"
+				opt["order"] = "ASC"
 			} else if value == "desc" {
-				opt["order"] = "desc"
+				opt["order"] = "DESC"
 			} else {
 				log.Printf("param order invalid: %s, set it to desc\n", value)
-				opt["order"] = "desc"
+				opt["order"] = "DESC"
 			}
 		case "orderby":
 			opt["orderby"] = strings.TrimSpace(value)
@@ -564,19 +564,36 @@ type queryClause struct {
 // menu_order
 func buildWhereClause(opt map[string]interface{}) (clause []string, err error) {
 	var (
-		where = ""
-		join  = ""
-		qc    queryClause
+		where   = ""
+		join    = ""
+		qc, cqc queryClause
 	)
 
 	_ = join
 
 	if opt["menu_order"] != nil {
-		where += " And menu_order = " + opt["menu_order"].(string)
+		qc.where += " And menu_order = " + opt["menu_order"].(string)
 	}
 
+	// taxonomy
 	// 目前getTaxSql不会返回错误
-	qc, err = getTaxSql(buildTaxQuery(opt), "AND", "posts", "id")
+	cqc, err = getTaxSql(buildTaxQuery(opt), "AND", "posts", "id")
+	qc.where += cqc.where
+	qc.join += cqc.join
+
+	// author, user stuff
+	cqc, err = getAuthorSql(opt)
+	qc.where += cqc.where
+
+	// order, order by
+	if opt["order"] == nil {
+		opt["order"] = "DESC"
+	}
+	if opt["orderby"] == nil {
+
+	} else {
+
+	}
 
 	return
 }
