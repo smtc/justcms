@@ -1,5 +1,7 @@
 package models
 
+import "fmt"
+
 type Select struct {
 	Text  string `json:"text"`
 	Value string `json:"value"`

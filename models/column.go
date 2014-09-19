@@ -108,7 +108,9 @@ func (c *Column) Save() error {
 	}
 	if c.Id == 0 {
 		c.CreatedAt = time.Now()
-		d.AddColumn(ndb, c, table.Name)
+		if d.HasTable(ndb, &table) {
+			d.AddColumn(ndb, c, table.Name)
+		}
 	} else {
 		old.Get(c.Id)
 		c.CreatedAt = old.CreatedAt

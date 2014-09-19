@@ -570,6 +570,7 @@ func buildWhereClause(opt map[string]interface{}) (clause []string, err error) {
 	)
 
 	_ = join
+	_ = where
 
 	if opt["menu_order"] != nil {
 		qc.where += " And menu_order = " + opt["menu_order"].(string)
