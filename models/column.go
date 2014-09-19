@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -92,15 +93,22 @@ func (c *Column) Get(id int64) error {
 
 func (c *Column) Save() error {
 	var (
-		db  = getColumnDB()
-		old Column
+		db    = getColumnDB()
+		ndb   = GetDB(DYNAMIC_DB)
+		d     = GetDriver()
+		table Table
+		old   Column
 	)
 	if c.Exist() {
 		return fmt.Errorf("column '%v' is existed", c.Name)
 	}
 
+	if err := table.Get(c.TableId); err != nil {
+		return err
+	}
 	if c.Id == 0 {
 		c.CreatedAt = time.Now()
+		d.AddColumn(ndb, c, table.Name)
 	} else {
 		old.Get(c.Id)
 		c.CreatedAt = old.CreatedAt
@@ -111,13 +119,30 @@ func (c *Column) Save() error {
 }
 
 func (c *Column) Delete() error {
-	db := getColumnDB()
-	return db.Delete(c).Error
+	return ColumnDelete("id = ?", c.Id)
 }
 
-func ColumnDelete(where string, data interface{}) error {
-	db := getColumnDB()
-	return db.Where(where, data).Delete(&Column{}).Error
+func ColumnDelete(where string, data ...interface{}) error {
+	var (
+		db      = getColumnDB()
+		ndb     = GetDB(DYNAMIC_DB)
+		d       = GetDriver()
+		columns []Column
+		table   Table
+		err     error
+	)
+
+	err = db.Where(where, data...).Find(&columns).Error
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+
+	table.Get(columns[0].TableId)
+	d.DropColumn(ndb, columns, table.Name)
+
+	err = db.Where(where, data...).Delete(&Column{}).Error
+	return err
 }
 
 func ColumnList(tableIds []int64) ([]Column, error) {

@@ -59,9 +59,6 @@ func TestTable(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	table2.Delete()
-	table.Delete()
-
 	// column test
 	c0 := table3.Columns[0]
 	if c0.Name != "id" {
@@ -82,6 +79,23 @@ func TestTable(t *testing.T) {
 		t.Fatal("table3's Column length should be 5 ", len(table3.Columns))
 	}
 
+	if err := c2.Delete(); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	table3.GetColumns()
+	if len(table3.Columns) != 4 {
+		t.Fatal("table3's Column length should be 4 ", len(table3.Columns))
+	}
+
+	if err := ColumnDelete("name like ?", "%e%"); err != nil {
+		t.Fatal(err.Error())
+	}
+	table3.GetColumns()
+	if len(table3.Columns) != 2 {
+		t.Fatal("table3's Column length should be 2 ", len(table3.Columns))
+	}
+
 	db := GetDB(DYNAMIC_DB)
 	scope := db.NewScope(nil)
 	suc := gorm.NewDialect("mysql").HasTable(scope, "user")
@@ -89,10 +103,9 @@ func TestTable(t *testing.T) {
 		t.Fatal("table user not exist")
 	}
 
-	/*
-		if err := table3.Delete(); err != nil {
-			t.Fatal(err.Error())
-		}
-	*/
-
+	table2.Delete()
+	table.Delete()
+	if err := table3.Delete(); err != nil {
+		t.Fatal(err.Error())
+	}
 }

@@ -64,7 +64,7 @@ func (t *Table) Save() error {
 	var (
 		db     = getTableDB()
 		isNew  = false
-		driver = GetDriver()
+		d      = GetDriver()
 		column Column
 		old    Table
 	)
@@ -97,16 +97,16 @@ func (t *Table) Save() error {
 
 		t.CreateTable()
 	} else {
-		driver.MigrateTable(db, t, &old)
+		d.MigrateTable(db, t, &old)
 	}
 	return nil
 }
 
 func (t *Table) Delete() error {
 	var (
-		db     = getTableDB()
-		driver = GetDriver()
-		err    error
+		db  = getTableDB()
+		d   = GetDriver()
+		err error
 	)
 	if err = db.Where("table_id = ?", t.Id).Delete(Column{}).Error; err != nil {
 		return err
@@ -117,7 +117,7 @@ func (t *Table) Delete() error {
 		return err
 	}
 
-	driver.DropTable(GetDB(DYNAMIC_DB), t)
+	d.DropTable(GetDB(DYNAMIC_DB), t)
 	return nil
 }
 
@@ -143,15 +143,15 @@ func (t Table) MarshalJSON() ([]byte, error) {
 
 func (t *Table) CreateTable() error {
 	var (
-		driver = GetDriver()
-		db     = GetDB(DYNAMIC_DB)
-		err    error
+		d   = GetDriver()
+		db  = GetDB(DYNAMIC_DB)
+		err error
 	)
 
-	if driver.HasTable(db, t) {
+	if d.HasTable(db, t) {
 		return fmt.Errorf("Table '%v' already exists.", t.Name)
 	}
 
-	err = driver.CreateTable(db, t)
+	err = d.CreateTable(db, t)
 	return err
 }
