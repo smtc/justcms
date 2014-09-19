@@ -26,6 +26,7 @@ func AdminMux() *web.Mux {
 	mux.Get("/admin/table/", TableList)
 	mux.Get("/admin/table/:id", TableEntity)
 	mux.Post("/admin/table/", TableSave)
+	mux.Delete("/admin/table/", TableDelete)
 
 	mux.Get("/admin/column/type", ColumnType)
 	mux.Get("/admin/column/filter", ColumnFilter)

@@ -61,3 +61,31 @@ func TableSave(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	h.RenderJson(t, 1)
 }
+
+func TableDelete(c web.C, w http.ResponseWriter, r *http.Request) {
+	var (
+		h      = goutils.HttpHandler(c, w, r)
+		db     = models.GetDB(models.DEFAULT_DB)
+		ids    []int64
+		err    error
+		tables []models.Table
+	)
+
+	err = h.FormatBody(&ids)
+	if err != nil {
+		h.RenderError(err.Error())
+		return
+	}
+
+	err = db.Where("id in (?)", ids).Find(&tables).Error
+	if err != nil {
+		h.RenderError(err.Error())
+		return
+	}
+
+	for _, t := range tables {
+		t.Delete()
+	}
+
+	h.RenderJson(nil, 1)
+}

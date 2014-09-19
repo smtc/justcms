@@ -2,11 +2,62 @@ package models
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"github.com/smtc/justcms/database"
 )
+
+//===========================================================
+
+const (
+	AUTO_INCREMENT = "auto_increment"
+	INT            = "int"
+	BIGINT         = "bigint"
+	FLOAT          = "float"
+	DOUBLE         = "double"
+	VARCHAR        = "varchar"
+	TEXT           = "text"
+	LONGTEXT       = "longtext"
+	BOOL           = "bool"
+	DATE           = "date"
+	DATETIME       = "datetime"
+	PICTURE        = "picture"
+)
+
+type columnType struct {
+	Name string
+	Size int
+	Des  string
+}
+
+var ColumnTypes = map[string]columnType{
+	AUTO_INCREMENT: columnType{AUTO_INCREMENT, 20, ""},
+	INT:            columnType{INT, 11, ""},
+	BIGINT:         columnType{BIGINT, 20, ""},
+	FLOAT:          columnType{FLOAT, 0, ""},
+	DOUBLE:         columnType{DOUBLE, 0, ""},
+	VARCHAR:        columnType{VARCHAR, 45, ""},
+	TEXT:           columnType{TEXT, 0, ""},
+	LONGTEXT:       columnType{LONGTEXT, 0, ""},
+	BOOL:           columnType{BOOL, 1, ""},
+	DATE:           columnType{DATE, 0, ""},
+	DATETIME:       columnType{DATETIME, 0, ""},
+	PICTURE:        columnType{PICTURE, 255, ""},
+}
+
+var Filters = map[string]string{
+	"eq":   "=",
+	"neq":  "!=",
+	"gt":   ">",
+	"egt":  ">=",
+	"lt":   "<",
+	"elt":  "<=",
+	"like": "like",
+	"in":   "in",
+}
+
+// ================================================================
 
 type Column struct {
 	Id           int64     `json:"id"`
@@ -25,7 +76,7 @@ type Column struct {
 }
 
 func getColumnDB() *gorm.DB {
-	return database.GetDB("column")
+	return GetDB(DEFAULT_DB)
 }
 
 func (c *Column) Exist() bool {
@@ -77,4 +128,34 @@ func ColumnList(tableIds []int64) ([]Column, error) {
 
 	err := db.Where(where, tableIds).Find(&cols).Error
 	return cols, err
+}
+
+func (c *Column) GetCreate() string {
+	var (
+		size int
+		sql  = ""
+		ct   = ColumnTypes[c.Type]
+	)
+	sql += fmt.Sprintf("`%v` ", c.Name)
+	switch c.Type {
+	case AUTO_INCREMENT:
+		sql += "BIGINT(20) NOT NULL AUTO_INCREMENT"
+		return sql
+	case BOOL:
+		sql += "TINYINT(1) "
+	case PICTURE, VARCHAR:
+		size = c.Size
+		if size == 0 {
+			size = ct.Size
+		}
+		sql += fmt.Sprintf("VARCHAR(%v) ", size)
+	default:
+		sql += fmt.Sprintf("%v ", strings.ToUpper(c.Type))
+	}
+	if c.NotNull {
+		sql += "NOT NULL "
+	} else {
+		sql += "NULL DEFAULT NULL "
+	}
+	return sql
 }

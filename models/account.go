@@ -57,7 +57,7 @@ type AccountMeta struct {
 }
 
 func getAccountDB() *gorm.DB {
-	return GetDB("account")
+	return GetDB(ACCOUNT_DB)
 }
 
 func (a *Account) Get(id int64) error {

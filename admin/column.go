@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/smtc/goutils"
-	"github.com/smtc/justcms/database"
 	"github.com/smtc/justcms/models"
 	"github.com/zenazn/goji/web"
 )
@@ -93,7 +92,7 @@ func ColumnType(c web.C, w http.ResponseWriter, r *http.Request) {
 	h := goutils.HttpHandler(c, w, r)
 
 	var types []models.Select
-	for _, t := range database.ColumnTypes {
+	for _, t := range models.ColumnTypes {
 		types = append(types, models.Select{t.Name, t.Name})
 	}
 
@@ -103,7 +102,7 @@ func ColumnType(c web.C, w http.ResponseWriter, r *http.Request) {
 func ColumnFilter(c web.C, w http.ResponseWriter, r *http.Request) {
 	h := goutils.HttpHandler(c, w, r)
 	filters := map[string]string{}
-	for k, v := range database.Filters {
+	for k, v := range models.Filters {
 		filters[v] = k
 	}
 	h.RenderJson(filters, 1)

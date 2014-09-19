@@ -12,12 +12,26 @@ import (
 )
 
 var (
-	db gorm.DB
+	dbs = map[string]*gorm.DB{}
 )
 
 // 增加一个name参数仅仅是为了以后的扩展
 func GetDB(dbname string) *gorm.DB {
-	return &db
+	//return &db
+	if dbname == "" {
+		dbname = config.GetStringDefault("dbname", "")
+	}
+
+	db := dbs[dbname]
+	if db == nil {
+		newDB, err := opendb(dbname, "", "")
+		if err != nil {
+			panic(err)
+		}
+		db = &newDB
+		dbs[dbname] = db
+	}
+	return db
 }
 
 // 根据配置文件建立数据库连接
@@ -27,15 +41,15 @@ func OpenDefaultDB() {
 
 // 供外部调用的API
 func OpenDB(dbname, dbuser, dbpass string) {
-	var err error
-	db, err = opendb(dbname, dbuser, dbpass)
+	db, err := opendb(dbname, dbuser, dbpass)
 	if err != nil {
 		panic(err)
 	}
+	dbs[dbname] = &db
 }
 
-func CloseDB() {
-	db.DB().Close()
+func CloseDB(dbname string) {
+	GetDB(dbname).DB().Close()
 }
 
 // 建立数据库连接

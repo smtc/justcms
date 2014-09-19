@@ -1,17 +1,45 @@
 package models
 
 import (
+	"github.com/guotie/config"
 	"github.com/jinzhu/gorm"
 	"github.com/smtc/justcms/database"
 )
 
-func GetDB(model string) *gorm.DB {
+// ===========================================================
+
+type driver interface {
+	CreateTable(t *Table) error
+	MigrateTable(t *Table) error
+}
+
+func GetDriver() driver {
+	return &mysql{}
+}
+
+// ===========================================================
+
+type table_database int
+
+const (
+	DEFAULT_DB table_database = iota
+	ACCOUNT_DB
+	DYNAMIC_DB
+)
+
+func getSchema(model table_database) string {
 	db := ""
 	switch model {
-	case "table", "account":
+	case DEFAULT_DB:
 		db = ""
+	case DYNAMIC_DB:
+		db = config.GetStringDefault("dbdynamic", "")
 	}
-	return database.GetDB(db)
+	return db
+}
+
+func GetDB(model table_database) *gorm.DB {
+	return database.GetDB(getSchema(model))
 }
 
 func InitDB() {

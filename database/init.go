@@ -13,7 +13,7 @@ var (
 )
 
 func init() {
-	deferinit.AddInit(OpenDefaultDB, CloseDB, 1000)
+	deferinit.AddInit(OpenDefaultDB, nil, 1000)
 	//deferinit.AddInit(openRedis, CloseRedis, 1100)
 
 	deferinit.AddInit(func() {

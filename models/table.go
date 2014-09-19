@@ -6,26 +6,25 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/smtc/goutils"
-	"github.com/smtc/justcms/database"
 )
 
 var (
 	// reserve table name
-	NotAllowTables = []string{"account", "role", "post"}
+	NotAllowTables = []string{}
 )
 
 type Table struct {
 	Id        int64
 	Name      string    `sql:"size:45;not null;unique"`
 	Alias     string    `sql:"size:45"`
-	Des       string    `Sql:"size:512"`
+	Des       string    `sql:"size:512"`
 	CreatedAt time.Time `json:"created_at"`
 	EditAt    time.Time `json:"edit_at"`
 	Columns   []Column
 }
 
 func getTableDB() *gorm.DB {
-	return database.GetDB("table")
+	return GetDB(DEFAULT_DB)
 }
 
 func (t *Table) Exist() bool {
@@ -81,7 +80,7 @@ func (t *Table) Save() error {
 	if isNew {
 		column.Name = "id"
 		column.Alias = "id"
-		column.Type = database.BIGINT
+		column.Type = BIGINT
 		column.PrimaryKey = true
 		column.TableId = t.Id
 		column.NotNull = true
@@ -109,14 +108,13 @@ func TableList(tbls *[]Table) error {
 	return err
 }
 
-func (t *Table) Field(name string) Column {
-	var column Column
+func (t *Table) Field(name string) *Column {
 	for _, c := range t.Columns {
 		if c.Name == name {
-			column = c
+			return &c
 		}
 	}
-	return column
+	return nil
 }
 
 func (t Table) MarshalJSON() ([]byte, error) {
@@ -125,11 +123,11 @@ func (t Table) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Table) CreateTable() error {
-	var sql []string
-	sql = append(sql, fmt.Sprintf("CREATE table `%v` (", t.Name))
-	return nil
+	c := GetDriver()
+	return c.CreateTable(t)
 }
 
 func (t *Table) MigrateTable() error {
-	return nil
+	c := GetDriver()
+	return c.MigrateTable(t)
 }

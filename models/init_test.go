@@ -1,9 +1,14 @@
 package models
 
-import "github.com/smtc/justcms/database"
+import (
+	"flag"
+
+	"github.com/guotie/config"
+)
 
 func init() {
-	database.OpenDB("justcms_test", "root", "123456")
+	configFn := flag.String("config", "./test.json", "config file path")
+	config.ReadCfg(*configFn)
 
 	dropTables()
 
@@ -11,7 +16,7 @@ func init() {
 }
 
 func dropTables() {
-	db := database.GetDB("")
+	db := GetDB(DEFAULT_DB)
 	db.DropTableIfExists(Account{})
 	db.DropTableIfExists(AccountMeta{})
 
