@@ -566,6 +566,7 @@ func buildWhereClause(opt map[string]interface{}) (clause []string, err error) {
 	var (
 		where = ""
 		join  = ""
+		qc    queryClause
 	)
 
 	_ = join
@@ -573,6 +574,9 @@ func buildWhereClause(opt map[string]interface{}) (clause []string, err error) {
 	if opt["menu_order"] != nil {
 		where += " And menu_order = " + opt["menu_order"].(string)
 	}
+
+	// 目前getTaxSql不会返回错误
+	qc, err = getTaxSql(buildTaxQuery(opt), "AND", "posts", "id")
 
 	return
 }
