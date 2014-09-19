@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/jinzhu/gorm"
@@ -61,7 +60,7 @@ func TestTable(t *testing.T) {
 	}
 
 	table2.Delete()
-	TableDelete("name='table'")
+	table.Delete()
 
 	// column test
 	c0 := table3.Columns[0]
@@ -83,15 +82,17 @@ func TestTable(t *testing.T) {
 		t.Fatal("table3's Column length should be 5 ", len(table3.Columns))
 	}
 
-	table3.CreateTable()
-
-	if err := table3.Delete(); err != nil {
-		t.Fatal(err.Error())
+	db := GetDB(DYNAMIC_DB)
+	scope := db.NewScope(nil)
+	suc := gorm.NewDialect("mysql").HasTable(scope, "user")
+	if !suc {
+		t.Fatal("table user not exist")
 	}
 
-	db := GetDB(DYNAMIC_DB)
-	//scope := gorm.Scope{db: db}
-	scope := db.NewScope(nil)
-	suc := gorm.NewDialect("mysql").HasTable(scope, "tables")
-	fmt.Println(suc)
+	/*
+		if err := table3.Delete(); err != nil {
+			t.Fatal(err.Error())
+		}
+	*/
+
 }

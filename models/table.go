@@ -20,6 +20,7 @@ type Table struct {
 	Des       string    `sql:"size:512"`
 	CreatedAt time.Time `json:"created_at"`
 	EditAt    time.Time `json:"edit_at"`
+	Engine    string    `sql:"size:45"`
 	Columns   []Column
 }
 
@@ -63,7 +64,9 @@ func (t *Table) Save() error {
 	var (
 		db     = getTableDB()
 		isNew  = false
+		driver = GetDriver()
 		column Column
+		old    Table
 	)
 	if t.Exist() {
 		return fmt.Errorf("table '%v' is existed", t.Name)
@@ -71,8 +74,12 @@ func (t *Table) Save() error {
 	if t.Id == 0 {
 		t.CreatedAt = time.Now()
 		isNew = true
+	} else {
+		db.Where("id = ?", t.Id).Find(&old)
+		t.CreatedAt = old.CreatedAt
 	}
 	t.EditAt = time.Now()
+
 	if err := db.Save(t).Error; err != nil {
 		return err
 	}
@@ -85,21 +92,33 @@ func (t *Table) Save() error {
 		column.TableId = t.Id
 		column.NotNull = true
 		column.Save()
+
+		t.GetColumns()
+
+		t.CreateTable()
+	} else {
+		driver.MigrateTable(db, t, &old)
 	}
 	return nil
 }
 
 func (t *Table) Delete() error {
-	db := getTableDB()
-	if err := db.Where("table_id = ?", t.Id).Delete(Column{}).Error; err != nil {
+	var (
+		db     = getTableDB()
+		driver = GetDriver()
+		err    error
+	)
+	if err = db.Where("table_id = ?", t.Id).Delete(Column{}).Error; err != nil {
 		return err
 	}
-	return db.Delete(t).Error
-}
 
-func TableDelete(where string) {
-	db := getTableDB()
-	db.Where(where).Delete(&Table{})
+	err = db.Delete(t).Error
+	if err != nil {
+		return err
+	}
+
+	driver.DropTable(GetDB(DYNAMIC_DB), t)
+	return nil
 }
 
 func TableList(tbls *[]Table) error {
@@ -123,11 +142,16 @@ func (t Table) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Table) CreateTable() error {
-	c := GetDriver()
-	return c.CreateTable(t)
-}
+	var (
+		driver = GetDriver()
+		db     = GetDB(DYNAMIC_DB)
+		err    error
+	)
 
-func (t *Table) MigrateTable() error {
-	c := GetDriver()
-	return c.MigrateTable(t)
+	if driver.HasTable(db, t) {
+		return fmt.Errorf("Table '%v' already exists.", t.Name)
+	}
+
+	err = driver.CreateTable(db, t)
+	return err
 }

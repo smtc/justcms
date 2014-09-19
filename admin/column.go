@@ -46,7 +46,6 @@ func ColumnSave(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	var (
 		column   models.Column
-		old      models.Column
 		err      error
 		table_id = h.Param.GetInt64("table_id", 0)
 	)
@@ -56,10 +55,7 @@ func ColumnSave(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if column.Id != 0 {
-		old.Get(column.Id)
-		column.CreatedAt = old.CreatedAt
-	} else {
+	if column.Id == 0 {
 		column.TableId = table_id
 	}
 

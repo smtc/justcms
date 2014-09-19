@@ -2,7 +2,6 @@ package models
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -92,13 +91,21 @@ func (c *Column) Get(id int64) error {
 }
 
 func (c *Column) Save() error {
-	db := getColumnDB()
+	var (
+		db  = getColumnDB()
+		old Column
+	)
 	if c.Exist() {
 		return fmt.Errorf("column '%v' is existed", c.Name)
 	}
+
 	if c.Id == 0 {
 		c.CreatedAt = time.Now()
+	} else {
+		old.Get(c.Id)
+		c.CreatedAt = old.CreatedAt
 	}
+
 	c.EditAt = time.Now()
 	return db.Save(c).Error
 }
@@ -128,34 +135,4 @@ func ColumnList(tableIds []int64) ([]Column, error) {
 
 	err := db.Where(where, tableIds).Find(&cols).Error
 	return cols, err
-}
-
-func (c *Column) GetCreate() string {
-	var (
-		size int
-		sql  = ""
-		ct   = ColumnTypes[c.Type]
-	)
-	sql += fmt.Sprintf("`%v` ", c.Name)
-	switch c.Type {
-	case AUTO_INCREMENT:
-		sql += "BIGINT(20) NOT NULL AUTO_INCREMENT"
-		return sql
-	case BOOL:
-		sql += "TINYINT(1) "
-	case PICTURE, VARCHAR:
-		size = c.Size
-		if size == 0 {
-			size = ct.Size
-		}
-		sql += fmt.Sprintf("VARCHAR(%v) ", size)
-	default:
-		sql += fmt.Sprintf("%v ", strings.ToUpper(c.Type))
-	}
-	if c.NotNull {
-		sql += "NOT NULL "
-	} else {
-		sql += "NULL DEFAULT NULL "
-	}
-	return sql
 }

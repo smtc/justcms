@@ -9,8 +9,10 @@ import (
 // ===========================================================
 
 type driver interface {
-	CreateTable(t *Table) error
-	MigrateTable(t *Table) error
+	HasTable(db *gorm.DB, t *Table) bool
+	CreateTable(db *gorm.DB, t *Table) error
+	DropTable(db *gorm.DB, t *Table)
+	MigrateTable(db *gorm.DB, t, old *Table)
 }
 
 func GetDriver() driver {
