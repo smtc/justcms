@@ -1,9 +1,9 @@
 package models
 
 import (
-	"time"
-
+	"fmt"
 	"github.com/jinzhu/gorm"
+	"time"
 )
 
 // 账号管理
@@ -94,5 +94,21 @@ func getAuthorIdByName(name string) (id int64, err error) {
 	db := getAccountDB()
 	err = db.Where("name=?", name).First(&acct).Error
 	id = acct.Id
+	return
+}
+
+// author, author__in, author__not_in
+func getAuthorSql(opt map[string]interface{}) (qc queryClause, err error) {
+	if opt["author"] != nil {
+		aid := opt["author"].(int64)
+		qc.where = fmt.Sprintf(" AND posts.post_author = %d ", aid)
+	} else if opt["author__in"] != nil {
+		aid := conjectToString(opt["author__in"].([]int64))
+		qc.where = fmt.Sprintf(" AND posts.post_author IN (%s) ", aid)
+	} else if opt["author__not_in"] != nil {
+		//$where .= " AND {$wpdb->posts}.post_author NOT IN ($author__not_in) ";
+		aid := conjectToString(opt["author__not_in"].([]int64))
+		qc.where = fmt.Sprintf(" AND posts.post_author NOT IN (%s) ", aid)
+	}
 	return
 }
