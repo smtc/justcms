@@ -8,11 +8,6 @@ import (
 	"github.com/smtc/goutils"
 )
 
-var (
-	// reserve table name
-	NotAllowTables = []string{}
-)
-
 type Table struct {
 	Id        int64
 	Name      string    `sql:"size:45;not null;unique"`
@@ -23,6 +18,12 @@ type Table struct {
 	Engine    string    `sql:"size:45"`
 	Columns   []Column
 }
+
+var (
+	// reserve table name
+	NotAllowTables = []string{}
+	tables         = make(map[int64]*Table)
+)
 
 func getTableDB() *gorm.DB {
 	return GetDB(DEFAULT_DB)
@@ -40,15 +41,28 @@ func (t *Table) Exist() bool {
 	return count > 0
 }
 
-func (t *Table) Get(id int64) error {
-	db := getTableDB()
-	return db.First(t, id).Error
+func GetTable(id int64) (*Table, error) {
+	var (
+		db  = getTableDB()
+		t   = tables[id]
+		err error
+	)
+	if t != nil {
+		return t, nil
+	}
+	t = &Table{}
+	err = db.First(t, id).Error
+	if err != nil {
+		return t, err
+	}
+	tables[id] = t
+	return t, nil
 }
 
-func (t *Table) GetColumns() error {
+func (t *Table) Get(id int64) error {
 	db := getTableDB()
-	t.Columns = nil
-	return db.Model(t).Related(&t.Columns).Order("name").Error
+	err := db.First(t, id).Error
+	return err
 }
 
 func (t *Table) Refresh() error {
@@ -57,14 +71,15 @@ func (t *Table) Refresh() error {
 	if err != nil {
 		return err
 	}
-	return t.GetColumns()
+	t.Columns = nil
+	return db.Model(t).Related(&t.Columns).Order("name").Error
 }
 
 func (t *Table) Save() error {
 	var (
 		db     = getTableDB()
 		isNew  = false
-		driver = GetDriver()
+		d      = GetDriver()
 		column Column
 		old    Table
 	)
@@ -85,39 +100,41 @@ func (t *Table) Save() error {
 	}
 
 	if isNew {
-		column.Name = "id"
-		column.Alias = "id"
-		column.Type = BIGINT
-		column.PrimaryKey = true
-		column.TableId = t.Id
-		column.NotNull = true
-		column.Save()
-
-		t.GetColumns()
+		if t.Field("id") == nil {
+			column.Name = "id"
+			column.Alias = "id"
+			column.Type = AUTO_INCREMENT
+			column.PrimaryKey = true
+			column.TableId = t.Id
+			column.NotNull = true
+			column.Save()
+		}
 
 		t.CreateTable()
 	} else {
-		driver.MigrateTable(db, t, &old)
+		d.MigrateTable(db, t, &old)
 	}
+	tables[t.Id] = t
 	return nil
 }
 
 func (t *Table) Delete() error {
 	var (
-		db     = getTableDB()
-		driver = GetDriver()
-		err    error
+		db  = getTableDB()
+		d   = GetDriver()
+		err error
 	)
 	if err = db.Where("table_id = ?", t.Id).Delete(Column{}).Error; err != nil {
 		return err
 	}
 
+	tables[t.Id] = nil
 	err = db.Delete(t).Error
 	if err != nil {
 		return err
 	}
 
-	driver.DropTable(GetDB(DYNAMIC_DB), t)
+	d.DropTable(GetDB(DYNAMIC_DB), t)
 	return nil
 }
 
@@ -127,9 +144,12 @@ func TableList(tbls *[]Table) error {
 	return err
 }
 
-func (t *Table) Field(name string) *Column {
+func (t *Table) Field(v interface{}) *Column {
 	for _, c := range t.Columns {
-		if c.Name == name {
+		if id, ok := v.(int64); ok && c.Id == id {
+			return &c
+		}
+		if name, ok := v.(string); ok && c.Name == name {
 			return &c
 		}
 	}
@@ -143,15 +163,16 @@ func (t Table) MarshalJSON() ([]byte, error) {
 
 func (t *Table) CreateTable() error {
 	var (
-		driver = GetDriver()
-		db     = GetDB(DYNAMIC_DB)
-		err    error
+		d   = GetDriver()
+		db  = GetDB(DYNAMIC_DB)
+		err error
 	)
 
-	if driver.HasTable(db, t) {
+	if d.HasTable(db, t) {
 		return fmt.Errorf("Table '%v' already exists.", t.Name)
 	}
 
-	err = driver.CreateTable(db, t)
+	t.Refresh()
+	err = d.CreateTable(db, t)
 	return err
 }

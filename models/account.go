@@ -2,8 +2,10 @@ package models
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"time"
+
+	"github.com/jinzhu/gorm"
+	"github.com/smtc/goutils"
 )
 
 // 账号管理
@@ -103,11 +105,11 @@ func getAuthorSql(opt map[string]interface{}) (qc queryClause, err error) {
 		aid := opt["author"].(int64)
 		qc.where = fmt.Sprintf(" AND posts.post_author = %d ", aid)
 	} else if opt["author__in"] != nil {
-		aid := conjectToString(opt["author__in"].([]int64))
+		aid := goutils.ToString(opt["author__in"].([]int64), "")
 		qc.where = fmt.Sprintf(" AND posts.post_author IN (%s) ", aid)
 	} else if opt["author__not_in"] != nil {
 		//$where .= " AND {$wpdb->posts}.post_author NOT IN ($author__not_in) ";
-		aid := conjectToString(opt["author__not_in"].([]int64))
+		aid := goutils.ToString(opt["author__not_in"].([]int64), "")
 		qc.where = fmt.Sprintf(" AND posts.post_author NOT IN (%s) ", aid)
 	}
 	return

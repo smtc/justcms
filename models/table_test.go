@@ -7,35 +7,38 @@ import (
 )
 
 func TestTable(t *testing.T) {
+	var err error
 	table := Table{
 		Name:  "test",
 		Alias: "测试",
 		Des:   "测试表",
 	}
 
-	if err := table.Save(); err != nil {
+	if err = table.Save(); err != nil {
 		t.Fatal(err.Error())
 	}
 
-	var table2 Table
-	if err := table2.Get(table.Id); err != nil {
+	table2, err := GetTable(table.Id)
+	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	table.Id = 0
 
-	if err := table.Save(); err == nil {
+	if err = table.Save(); err == nil {
 		t.Fatal("table should be existed")
 	}
 
-	table.Name = "table"
-	if err := table.Save(); err != nil {
-		t.Fatal(err.Error())
-	}
+	/*
+		table.Name = "table"
+		if err = table.Save(); err != nil {
+			t.Fatal(err.Error())
+		}
 
-	if table.Name == table2.Name {
-		t.Fatal(table.Name + "==" + table2.Name)
-	}
+		if table.Name == table2.Name {
+			t.Fatal(table.Name + "==" + table2.Name)
+		}
+	*/
 
 	table3 := Table{
 		Name:  "test",
@@ -51,16 +54,13 @@ func TestTable(t *testing.T) {
 	if !exist {
 		t.Fatal("table test should be existed")
 	}
-	if err := table3.Save(); err == nil {
+	if err = table3.Save(); err == nil {
 		t.Fatal("table3 save should error")
 	}
 	table3.Name = "user"
-	if err := table3.Save(); err != nil {
+	if err = table3.Save(); err != nil {
 		t.Fatal(err.Error())
 	}
-
-	table2.Delete()
-	table.Delete()
 
 	// column test
 	c0 := table3.Columns[0]
@@ -73,13 +73,35 @@ func TestTable(t *testing.T) {
 		t.Fatal("column should be '姓名', not ", c1.Alias)
 	}
 
-	c2 := Column{TableId: table3.Id, Name: "email", Alias: "邮箱", Type: VARCHAR, Size: 100}
+	c2 := Column{TableId: table3.Id, Name: "email1", Alias: "邮箱", Type: VARCHAR, Size: 100}
 	c2.Save()
-	if err := table3.GetColumns(); err != nil {
+	if err = table3.Refresh(); err != nil {
 		t.Fatal(err.Error())
 	}
+
+	c2.Name = "email"
+	c2.Type = BIGINT
+	c2.Save()
+
 	if len(table3.Columns) != 5 {
 		t.Fatal("table3's Column length should be 5 ", len(table3.Columns))
+	}
+
+	if err = c2.Delete(); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	table3.Refresh()
+	if len(table3.Columns) != 4 {
+		t.Fatal("table3's Column length should be 4 ", len(table3.Columns))
+	}
+
+	if err = ColumnDelete("name like ?", "%e%"); err != nil {
+		t.Fatal(err.Error())
+	}
+	table3.Refresh()
+	if len(table3.Columns) != 2 {
+		t.Fatal("table3's Column length should be 2 ", len(table3.Columns))
 	}
 
 	db := GetDB(DYNAMIC_DB)
@@ -89,10 +111,9 @@ func TestTable(t *testing.T) {
 		t.Fatal("table user not exist")
 	}
 
-	/*
-		if err := table3.Delete(); err != nil {
-			t.Fatal(err.Error())
-		}
-	*/
-
+	table2.Delete()
+	table.Delete()
+	if err = table3.Delete(); err != nil {
+		t.Fatal(err.Error())
+	}
 }
