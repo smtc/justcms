@@ -70,7 +70,6 @@ func (m *mysql) CreateTable(db *gorm.DB, t *Table) error {
 	sql = append(sql, fmt.Sprintf("PRIMARY KEY (%v)", strings.Join(primary_key, ",")))
 	sql = append(sql, ") COLLATE='utf8_general_ci' \nENGINE=MyISAM;")
 
-	log.Println(strings.Join(sql, "\n"))
 	return m.exec(db, strings.Join(sql, "\n"))
 }
 

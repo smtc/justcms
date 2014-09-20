@@ -23,6 +23,10 @@ const (
 	DATE           = "date"
 	DATETIME       = "datetime"
 	PICTURE        = "picture"
+
+	PRIVATE   = 0
+	PROTECTED = 1
+	PUBLIC    = 2
 )
 
 type columnType struct {

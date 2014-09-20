@@ -35,6 +35,8 @@ func AdminMux() *web.Mux {
 	mux.Post(regexp.MustCompile(`^/admin/column/(?P<table_id>.+)/$`), ColumnSave)
 	mux.Delete(regexp.MustCompile(`^/admin/column/(?P<table_id>.+)/$`), ColumnDelete)
 
+	mux.Get(regexp.MustCompile(`^/admin/dynamic/struct/(?P<table>.+)$`), DynamicList)
+
 	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+):(?P<param>.+)$`), templateHandler)
 	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+)$`), templateHandler)
 

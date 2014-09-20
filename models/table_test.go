@@ -111,6 +111,11 @@ func TestTable(t *testing.T) {
 		t.Fatal("table user not exist")
 	}
 
+	stt := Struct{}
+	stt.GetStruct(&table3)
+	//json, err := goutils.ToJsonOnly(stt)
+	//println(json)
+
 	table2.Delete()
 	table.Delete()
 	if err = table3.Delete(); err != nil {

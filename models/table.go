@@ -56,6 +56,30 @@ func GetTable(id int64) (*Table, error) {
 		return t, err
 	}
 	tables[id] = t
+	t.Refresh()
+	return t, nil
+}
+
+func GetTableByName(name string) (*Table, error) {
+	for _, t := range tables {
+		if t.Name == name {
+			return t, nil
+		}
+	}
+
+	var (
+		t   = &Table{}
+		db  = getTableDB()
+		err error
+	)
+
+	t = &Table{}
+	err = db.Where("name=?", name).First(t).Error
+	if err != nil {
+		return t, err
+	}
+	tables[t.Id] = t
+	t.Refresh()
 	return t, nil
 }
 
