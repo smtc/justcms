@@ -1,16 +1,11 @@
 package models
 
 import (
-	"fmt"
+	//"fmt"
 	//"github.com/jinzhu/gorm"
-	"log"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/smtc/justcms/database"
+	//"log"
+	"time"
 )
 
 // Post table

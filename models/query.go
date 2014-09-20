@@ -1,6 +1,17 @@
 package models
 
 // 查询posts
+import (
+	"fmt"
+	//"github.com/jinzhu/gorm"
+	"log"
+	"net/http"
+	"net/url"
+	"strings"
+	//"time"
+
+	"github.com/smtc/justcms/database"
+)
 
 type queryClause struct {
 	join     string
@@ -407,7 +418,6 @@ func parseQuery(r string) (opt map[string]interface{}, err error) {
 // menu_order
 func buildWhereClause(opt map[string]interface{}) (clause []string, err error) {
 	var (
-		where   = ""
 		join    = ""
 		qc, cqc queryClause
 	)
