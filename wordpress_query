@@ -1,0 +1,61 @@
+wordpress query逻辑：
+
+parse_query：
+	1 填充query_var数组
+	2 根据query设置is_xxx变量
+		is_single, is_attachment, is_page, is_search,
+		is_time, is_date, is_month, is_year, is_time, is_day
+		is_category, is_tag, is_tax, is_archive,
+		is_author,
+		is_post_type_archive, 
+		is_feed, is_trackback, is_paged, is_comments_popup, is_preview,
+		is_admin,
+		is_singular,
+		is_comment_feed,
+		is_home,
+		is_404,
+		is_comments_popup,
+		is_robots, is_page,
+		is_posts_page
+
+	3 解析tax_query
+
+get_post_types:
+
+
+get_posts：
+	1 分析参数：parse_query;
+	2 填充参数;
+	3 解析meta_query: parse_query_vars;
+	4 重新结算query_var的hash值，检查是否发生变化
+	5 设置默认参数
+	6 ignore_sticky_posts false
+	7 suppress_filters false 
+	8 cache_results
+	9 update_post_term_cache，update_post_meta_cache true
+	10 post_type
+	11 确定posts_per_page，比较复杂
+	12 comments_per_page
+	13 page_id, no_found_rows
+	14 fields
+	15 时间参数：m，date_parameters，生成date_query
+	16 where += date_query->get_sql()
+	17 post_type存在且不为any的情况：
+		post_type类型为post，page，attachment，revision都不支持query_var，自定义的post_type可以支持query_var
+
+		如果该post_type不支持hierarchical，直接把该post_type作为post_name来查找post；
+		如果支持hierarchical，则将post_type的query_var赋值给pagename：$q['pagename'] = $q[ $ptype_obj->query_var ];将q['name']设为空
+
+		如果pagename不为空，xxxx，复杂的处理。。。。
+
+	18 处理id和page_id
+	19 search选项
+	20 处理分类问题taxonomy
+		复杂的处理。。。。
+	21 author
+	22 order，orderby
+	22 post_type
+		复杂的处理
+	23 post_status
+		复杂的处理
+		
