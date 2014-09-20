@@ -15,6 +15,7 @@ type driver interface {
 	MigrateTable(db *gorm.DB, t, old *Table) error
 	AddColumn(db *gorm.DB, c *Column, table string) error
 	DropColumn(db *gorm.DB, columns []Column, table string) error
+	ChangeColumn(db *gorm.DB, c *Column, old, table string) error
 }
 
 func GetDriver() driver {

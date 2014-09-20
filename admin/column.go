@@ -12,11 +12,13 @@ func ColumnList(c web.C, w http.ResponseWriter, r *http.Request) {
 	h := goutils.HttpHandler(c, w, r)
 
 	var (
-		table models.Table
 		id    = h.Param.GetInt64("table_id", 0)
+		err   error
+		table *models.Table
 	)
 
-	if err := table.Get(id); err != nil {
+	table, err = models.GetTable(id)
+	if err != nil {
 		h.RenderError(err.Error())
 	}
 	table.GetColumns()

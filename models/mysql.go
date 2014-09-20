@@ -118,3 +118,8 @@ func (m *mysql) AddColumn(db *gorm.DB, c *Column, table string) error {
 	sql := fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN %s;", table, m.GetColumn(c))
 	return m.exec(db, sql)
 }
+
+func (m *mysql) ChangeColumn(db *gorm.DB, c *Column, old, table string) error {
+	sql := fmt.Sprintf("ALTER TABLE `%s` CHANGE COLUMN `%s` %s", table, old, m.GetColumn(c))
+	return m.exec(db, sql)
+}

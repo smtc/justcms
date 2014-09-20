@@ -96,28 +96,33 @@ func (c *Column) Save() error {
 		db    = getColumnDB()
 		ndb   = GetDB(DYNAMIC_DB)
 		d     = GetDriver()
-		table Table
+		table *Table
 		old   Column
+		err   error
 	)
 	if c.Exist() {
 		return fmt.Errorf("column '%v' is existed", c.Name)
 	}
 
-	if err := table.Get(c.TableId); err != nil {
+	table, err = GetTable(c.TableId)
+	if err != nil {
 		return err
 	}
 	if c.Id == 0 {
 		c.CreatedAt = time.Now()
-		if d.HasTable(ndb, &table) {
+		if d.HasTable(ndb, table) {
 			d.AddColumn(ndb, c, table.Name)
 		}
 	} else {
 		old.Get(c.Id)
 		c.CreatedAt = old.CreatedAt
+		d.ChangeColumn(ndb, c, old.Name, table.Name)
 	}
 
 	c.EditAt = time.Now()
-	return db.Save(c).Error
+	err = db.Save(c).Error
+	table.Refresh()
+	return err
 }
 
 func (c *Column) Delete() error {
@@ -130,7 +135,7 @@ func ColumnDelete(where string, data ...interface{}) error {
 		ndb     = GetDB(DYNAMIC_DB)
 		d       = GetDriver()
 		columns []Column
-		table   Table
+		table   *Table
 		err     error
 	)
 
@@ -140,10 +145,11 @@ func ColumnDelete(where string, data ...interface{}) error {
 		return err
 	}
 
-	table.Get(columns[0].TableId)
+	table, _ = GetTable(columns[0].TableId)
 	d.DropColumn(ndb, columns, table.Name)
-
 	err = db.Where(where, data...).Delete(&Column{}).Error
+	table.Refresh()
+
 	return err
 }
 

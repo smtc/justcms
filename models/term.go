@@ -3,8 +3,10 @@ package models
 import (
 	//"time"
 	"fmt"
-	"github.com/smtc/justcms/database"
 	"strings"
+
+	"github.com/smtc/goutils"
+	"github.com/smtc/justcms/database"
 )
 
 /*
@@ -130,7 +132,7 @@ func getTaxSql(ta []taxQuery, relation, tableName, fieldName string) (qc queryCl
 	}
 
 	for i, tq := range ta {
-		terms := conjectToString(tq.terms)
+		terms := goutils.ToString(tq.terms, "")
 		switch tq.operator {
 		case "IN":
 			alias := ""

@@ -8,11 +8,6 @@ import (
 	"github.com/smtc/goutils"
 )
 
-var (
-	// reserve table name
-	NotAllowTables = []string{}
-)
-
 type Table struct {
 	Id        int64
 	Name      string    `sql:"size:45;not null;unique"`
@@ -23,6 +18,12 @@ type Table struct {
 	Engine    string    `sql:"size:45"`
 	Columns   []Column
 }
+
+var (
+	// reserve table name
+	NotAllowTables = []string{}
+	tables         = make(map[int64]*Table)
+)
 
 func getTableDB() *gorm.DB {
 	return GetDB(DEFAULT_DB)
@@ -40,15 +41,28 @@ func (t *Table) Exist() bool {
 	return count > 0
 }
 
-func (t *Table) Get(id int64) error {
-	db := getTableDB()
-	return db.First(t, id).Error
+func GetTable(id int64) (*Table, error) {
+	var (
+		db  = getTableDB()
+		t   = tables[id]
+		err error
+	)
+	if t != nil {
+		return t, nil
+	}
+	t = &Table{}
+	err = db.First(t, id).Error
+	if err != nil {
+		return t, err
+	}
+	tables[id] = t
+	return t, nil
 }
 
-func (t *Table) GetColumns() error {
+func (t *Table) Get(id int64) error {
 	db := getTableDB()
-	t.Columns = nil
-	return db.Model(t).Related(&t.Columns).Order("name").Error
+	err := db.First(t, id).Error
+	return err
 }
 
 func (t *Table) Refresh() error {
@@ -57,7 +71,8 @@ func (t *Table) Refresh() error {
 	if err != nil {
 		return err
 	}
-	return t.GetColumns()
+	t.Columns = nil
+	return db.Model(t).Related(&t.Columns).Order("name").Error
 }
 
 func (t *Table) Save() error {
@@ -85,20 +100,21 @@ func (t *Table) Save() error {
 	}
 
 	if isNew {
-		column.Name = "id"
-		column.Alias = "id"
-		column.Type = BIGINT
-		column.PrimaryKey = true
-		column.TableId = t.Id
-		column.NotNull = true
-		column.Save()
-
-		t.GetColumns()
+		if t.Field("id") == nil {
+			column.Name = "id"
+			column.Alias = "id"
+			column.Type = BIGINT
+			column.PrimaryKey = true
+			column.TableId = t.Id
+			column.NotNull = true
+			column.Save()
+		}
 
 		t.CreateTable()
 	} else {
 		d.MigrateTable(db, t, &old)
 	}
+	tables[t.Id] = t
 	return nil
 }
 
@@ -112,6 +128,7 @@ func (t *Table) Delete() error {
 		return err
 	}
 
+	tables[t.Id] = nil
 	err = db.Delete(t).Error
 	if err != nil {
 		return err
@@ -130,6 +147,15 @@ func TableList(tbls *[]Table) error {
 func (t *Table) Field(name string) *Column {
 	for _, c := range t.Columns {
 		if c.Name == name {
+			return &c
+		}
+	}
+	return nil
+}
+
+func (t *Table) GetField(id int64) *Column {
+	for _, c := range t.Columns {
+		if c.Id == id {
 			return &c
 		}
 	}
