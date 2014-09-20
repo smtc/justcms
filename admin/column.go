@@ -21,7 +21,7 @@ func ColumnList(c web.C, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.RenderError(err.Error())
 	}
-	table.GetColumns()
+	table.Refresh()
 
 	list, _ := goutils.ToMapList(table.Columns, []string{}, goutils.FilterModeExclude)
 	h.RenderPage(list)

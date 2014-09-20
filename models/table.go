@@ -103,7 +103,7 @@ func (t *Table) Save() error {
 		if t.Field("id") == nil {
 			column.Name = "id"
 			column.Alias = "id"
-			column.Type = BIGINT
+			column.Type = AUTO_INCREMENT
 			column.PrimaryKey = true
 			column.TableId = t.Id
 			column.NotNull = true
@@ -144,18 +144,12 @@ func TableList(tbls *[]Table) error {
 	return err
 }
 
-func (t *Table) Field(name string) *Column {
+func (t *Table) Field(v interface{}) *Column {
 	for _, c := range t.Columns {
-		if c.Name == name {
+		if id, ok := v.(int64); ok && c.Id == id {
 			return &c
 		}
-	}
-	return nil
-}
-
-func (t *Table) GetField(id int64) *Column {
-	for _, c := range t.Columns {
-		if c.Id == id {
+		if name, ok := v.(string); ok && c.Name == name {
 			return &c
 		}
 	}
@@ -178,6 +172,7 @@ func (t *Table) CreateTable() error {
 		return fmt.Errorf("Table '%v' already exists.", t.Name)
 	}
 
+	t.Refresh()
 	err = d.CreateTable(db, t)
 	return err
 }

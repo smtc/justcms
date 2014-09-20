@@ -50,6 +50,7 @@ func (m *mysql) CreateTable(db *gorm.DB, t *Table) error {
 		length      = len(t.Columns)
 	)
 	if length == 0 {
+		log.Println("Table have no columns!")
 		return fmt.Errorf("Table have no columns!")
 	}
 
@@ -69,6 +70,7 @@ func (m *mysql) CreateTable(db *gorm.DB, t *Table) error {
 	sql = append(sql, fmt.Sprintf("PRIMARY KEY (%v)", strings.Join(primary_key, ",")))
 	sql = append(sql, ") COLLATE='utf8_general_ci' \nENGINE=MyISAM;")
 
+	log.Println(strings.Join(sql, "\n"))
 	return m.exec(db, strings.Join(sql, "\n"))
 }
 
