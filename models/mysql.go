@@ -1,22 +1,25 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/smtc/goutils"
 )
 
 type mysql struct{}
 
-func (m *mysql) exec(db *gorm.DB, sql string) error {
-	if sql == "" {
+func (m *mysql) exec(db *gorm.DB, sqlStr string) error {
+	if sqlStr == "" {
 		return nil
 	}
-	_, err := db.NewScope(nil).DB().Query(sql)
+	_, err := db.NewScope(nil).DB().Query(sqlStr)
 	if err != nil {
-		log.Println(sql, err.Error())
+		log.Println(sqlStr, err.Error())
 	}
 	return err
 }
@@ -28,24 +31,24 @@ func (m *mysql) HasTable(db *gorm.DB, t *Table) bool {
 }
 
 func (m *mysql) DropTable(db *gorm.DB, t *Table) error {
-	sql := fmt.Sprintf("DROP TABLE if exists `%v`;", t.Name)
-	return m.exec(db, sql)
+	sqlStr := fmt.Sprintf("DROP TABLE if exists `%v`;", t.Name)
+	return m.exec(db, sqlStr)
 }
 
 func (m *mysql) MigrateTable(db *gorm.DB, t, old *Table) error {
 	var (
-		sql = ""
+		sqlStr = ""
 	)
 	if t.Id != 0 && t.Name != old.Name {
-		sql = fmt.Sprintf("ALTER TABLE `%v` RENAME `%v`;", old.Name, t.Name)
+		sqlStr = fmt.Sprintf("ALTER TABLE `%v` RENAME `%v`;", old.Name, t.Name)
 	}
 
-	return m.exec(db, sql)
+	return m.exec(db, sqlStr)
 }
 
 func (m *mysql) CreateTable(db *gorm.DB, t *Table) error {
 	var (
-		sql         []string
+		sqlStr      []string
 		primary_key []string
 		length      = len(t.Columns)
 	)
@@ -54,56 +57,58 @@ func (m *mysql) CreateTable(db *gorm.DB, t *Table) error {
 		return fmt.Errorf("Table have no columns!")
 	}
 
-	sql = append(sql, fmt.Sprintf("CREATE table `%v` (", t.Name))
+	sqlStr = append(sqlStr, fmt.Sprintf("CREATE table `%v` (", t.Name))
 	for _, c := range t.Columns {
-		sql = append(sql, m.GetColumn(&c)+",")
+		sqlStr = append(sqlStr, m.GetColumn(&c)+",")
 		if c.PrimaryKey {
 			primary_key = append(primary_key, "`"+c.Name+"`")
 		}
 	}
 	if len(primary_key) == 0 {
 		if t.Field("id") == nil {
-			sql = append(sql, "`id` BIGINT(20) NOT NULL AUTO_INCREMENT,")
+			sqlStr = append(sqlStr, "`id` BIGINT(20) NOT NULL AUTO_INCREMENT,")
 		}
 		primary_key = append(primary_key, "`id`")
 	}
-	sql = append(sql, fmt.Sprintf("PRIMARY KEY (%v)", strings.Join(primary_key, ",")))
-	sql = append(sql, ") COLLATE='utf8_general_ci' \nENGINE=MyISAM;")
+	sqlStr = append(sqlStr, fmt.Sprintf("PRIMARY KEY (%v)", strings.Join(primary_key, ",")))
+	sqlStr = append(sqlStr, ") COLLATE='utf8_general_ci' \nENGINE=MyISAM;")
 
-	return m.exec(db, strings.Join(sql, "\n"))
+	return m.exec(db, strings.Join(sqlStr, "\n"))
 }
 
 func (m *mysql) GetColumn(c *Column) string {
 	var (
-		size int
-		sql  = ""
-		ct   = ColumnTypes[c.Type]
+		size   int
+		sqlStr = ""
+		ct     = ColumnTypes[c.Type]
 	)
-	sql += fmt.Sprintf("`%v` ", c.Name)
+	sqlStr += fmt.Sprintf("`%v` ", c.Name)
 	switch c.Type {
 	case AUTO_INCREMENT:
-		sql += "BIGINT(20) NOT NULL AUTO_INCREMENT"
-		return sql
+		sqlStr += "BIGINT(20) NOT NULL AUTO_INCREMENT"
+		return sqlStr
 	case BOOL:
-		sql += "TINYINT(1) "
+		sqlStr += "TINYINT(1) "
 	case PICTURE, VARCHAR:
 		size = c.Size
 		if size == 0 {
 			size = ct.Size
 		}
-		sql += fmt.Sprintf("VARCHAR(%v) ", size)
+		sqlStr += fmt.Sprintf("VARCHAR(%v) ", size)
+	case DATE, DATETIME:
+		sqlStr += "BIGINT "
 	default:
-		sql += fmt.Sprintf("%v ", strings.ToUpper(c.Type))
+		sqlStr += fmt.Sprintf("%v ", strings.ToUpper(c.Type))
 	}
 	if c.NotNull {
-		sql += "NOT NULL "
+		sqlStr += "NOT NULL "
 	} else {
-		sql += "NULL "
+		sqlStr += "NULL "
 	}
 	if c.DefaultValue != "" {
-		sql += fmt.Sprintf("DEFAULT '%s'", c.DefaultValue)
+		sqlStr += fmt.Sprintf("DEFAULT '%s'", c.DefaultValue)
 	}
-	return sql
+	return sqlStr
 }
 
 func (m *mysql) DropColumn(db *gorm.DB, columns []Column, table string) error {
@@ -111,16 +116,69 @@ func (m *mysql) DropColumn(db *gorm.DB, columns []Column, table string) error {
 	for _, c := range columns {
 		cs = append(cs, fmt.Sprintf("DROP COLUMN `%s`", c.Name))
 	}
-	sql := fmt.Sprintf("ALTER TABLE `%s` %s;", table, strings.Join(cs, ","))
-	return m.exec(db, sql)
+	sqlStr := fmt.Sprintf("ALTER TABLE `%s` %s;", table, strings.Join(cs, ","))
+	return m.exec(db, sqlStr)
 }
 
 func (m *mysql) AddColumn(db *gorm.DB, c *Column, table string) error {
-	sql := fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN %s;", table, m.GetColumn(c))
-	return m.exec(db, sql)
+	sqlStr := fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN %s;", table, m.GetColumn(c))
+	return m.exec(db, sqlStr)
 }
 
 func (m *mysql) ChangeColumn(db *gorm.DB, c *Column, old, table string) error {
-	sql := fmt.Sprintf("ALTER TABLE `%s` CHANGE COLUMN `%s` %s", table, old, m.GetColumn(c))
-	return m.exec(db, sql)
+	sqlStr := fmt.Sprintf("ALTER TABLE `%s` CHANGE COLUMN `%s` %s", table, old, m.GetColumn(c))
+	return m.exec(db, sqlStr)
+}
+
+func (m *mysql) GetPage(db *gorm.DB, t *Table, page, size int) (interface{}, int, error) {
+	sqlStr := "SELECT * FROM `%s` WHERE 1=1 %s limit %d, %d;"
+	sqlStr = fmt.Sprintf(sqlStr, t.Name, "", (page-1)*size, size)
+
+	rows, err := db.NewScope(nil).DB().Query(sqlStr)
+	defer rows.Close()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var (
+		columns, _ = rows.Columns()
+		values     = make([]sql.RawBytes, len(columns))
+		scanArgs   = make([]interface{}, len(values))
+		results    = []map[string]interface{}{}
+	)
+
+	var getValue = func(c *Column, s string) interface{} {
+		switch c.Type {
+		case INT, BIGINT, AUTO_INCREMENT:
+			return goutils.ToInt64(s, 0)
+		case BOOL:
+			return goutils.ToBool(s, false)
+		case FLOAT, DOUBLE:
+			return goutils.ToFloat64(s, 0)
+		case DATE, DATETIME:
+			t := time.Unix(goutils.ToInt64(s, 0), 0)
+			if c.Type == DATE {
+				return t.Format("2006-01-02")
+			} else {
+				return t.Format("2006-01-02 15:04:05")
+			}
+		}
+		return s
+	}
+
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
+	for rows.Next() {
+		result := map[string]interface{}{}
+		err = rows.Scan(scanArgs...)
+		if err != nil {
+			//panic(err.Error()) // proper error handling instead of panic in your app
+		}
+		for i, v := range values {
+			result[columns[i]] = getValue(t.Field(columns[i]), string(v))
+		}
+		results = append(results, result)
+	}
+	return results, 0, nil
 }

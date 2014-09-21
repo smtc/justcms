@@ -17,7 +17,7 @@
             <thead>
                 <tr>
                     <th style="width:19px;" v-html="'selectall'|icon"></th>
-                    <th style="width: 80px;"></th>
+                    <th style="width: 120px;"></th>
                     <th>名称</th>
                     <th>中文名</th>
                     <th>描述</th>
@@ -30,7 +30,8 @@
                     <td v-html="'select'|icon"></td>
                     <td>
                         <a title="编辑" v-href="table.edit#{{id}}"><i class="icon icon-edit"></i></a>&nbsp;
-                        <a title="结构" class="text-success" v-href="column.list:{{id}}"><i class="icon icon-list"></i></a>
+                        <a title="结构" class="text-success" v-href="column.list:{{id}}"><i class="icon icon-list"></i></a>&nbsp;
+                        <a title="数据" class="text-success" v-href="dynamic.list:{{name}}"><i class="icon icon-files-o"></i></a>
                     </td>
                     <td>{{name}}</td>
                     <td>{{alias}}</td>

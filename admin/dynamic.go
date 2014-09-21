@@ -9,12 +9,13 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
-func DynamicList(c web.C, w http.ResponseWriter, r *http.Request) {
+func DynamicStruct(c web.C, w http.ResponseWriter, r *http.Request) {
 	var (
-		h     = goutils.HttpHandler(c, w, r)
-		tn    = h.Param.GetString("table", "")
-		table *models.Table
-		err   error
+		h      = goutils.HttpHandler(c, w, r)
+		tn     = h.Param.GetString("table", "")
+		method = h.Param.GetString("method", "list")
+		table  *models.Table
+		err    error
 	)
 
 	if tn == "" {
@@ -31,17 +32,38 @@ func DynamicList(c web.C, w http.ResponseWriter, r *http.Request) {
 	srt := models.Struct{}
 	srt.GetStruct(table)
 	srt.Src = fmt.Sprintf("dynamic/api/%s/", tn)
-	srt.Op = map[string]map[string]string{
-		"unit": map[string]string{
-			"edit": fmt.Sprintf("dynamic.edit:%s#{{id}}", tn),
-			"del":  "id={{id}}",
-		},
-		"mult": map[string]string{
-			"del":     "id",
-			"new":     fmt.Sprintf("dynamic.edit:%s#0", tn),
-			"refresh": "",
-		},
+	if method == "list" {
+		srt.Op = map[string]map[string]string{
+			"unit": map[string]string{
+				"edit": fmt.Sprintf("dynamic.edit:%s#{{id}}", tn),
+				"del":  "id={{id}}",
+			},
+			"mult": map[string]string{
+				"del":     "id",
+				"new":     fmt.Sprintf("dynamic.edit:%s#0", tn),
+				"refresh": "",
+			},
+		}
 	}
 
 	h.RenderJsonNoWrap(srt)
+}
+
+func DynamicList(c web.C, w http.ResponseWriter, r *http.Request) {
+	var (
+		h     = goutils.HttpHandler(c, w, r)
+		tn    = h.Param.GetString("table", "")
+		total int
+		err   error
+		p     interface{}
+	)
+
+	p, total, err = models.GetDynamicPage(tn, 1, 20)
+	if err != nil {
+		h.RenderError(err.Error())
+		return
+	}
+
+	_ = total
+	h.RenderPage(p)
 }
