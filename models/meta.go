@@ -19,20 +19,20 @@ type Meta struct {
 
 // deal with xxx_meta table
 // api:
+//	 以下函数中的第一个参数id均不是Meta table中的id字段，而是target_id或object_id
 //		AddMetaData
 //		UpdateMetaData
 //		DelMetaData
 //		GetMetaData
 //		HasMetaData
 //
-//		GetMetaDataById
-//		UpdateMetaDataById
-//		DelMetaDataById
+//		GetMetaDataById    -- has not implement
+//		UpdateMetaDataById -- has not implement
+//		DelMetaDataById    -- has not implement
 //
 //		UpdateMetaCache
 //
 //		getMetaSql
-//		getMetaTable
 //
 //		isProtectedMeta
 //		sanitizeMeta
@@ -222,10 +222,12 @@ func GetMetaData(id interface{}, typ, key string) (value string, err error) {
 	return
 }
 
+// 是否存在meta key
 func HasMetaData(id interface{}, typ, key string) bool {
 	var (
 		iid   = goutils.ToInt64(id, 0)
 		sid   = goutils.ToString(id, "")
+		err   error
 		count int
 	)
 	// todo: apply_filter, do_action, etc...
@@ -247,6 +249,24 @@ func HasMetaData(id interface{}, typ, key string) bool {
 	return false
 }
 
+func isProtectedMeta(key string, typ ...string) (res bool) {
+	if key[0] == '_' {
+		res = true
+	}
+	// todo: apply_filter
+	return
+}
 func sanitizeMeta(typ, key, value string) string {
+	// todo: apply_filter
 	return value
+}
+
+// todo: RegisterMeta
+func RegisterMeta() {
+
+}
+
+// get meta sql
+func getMetaSql() {
+
 }
