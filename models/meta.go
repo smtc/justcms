@@ -7,16 +7,6 @@ import (
 	"github.com/smtc/justcms/database"
 )
 
-var (
-	_metaTables = map[string]string{
-		"user":    "account_metas",
-		"accout":  "account_metas",
-		"post":    "post_metas",
-		"reply":   "reply_metas",
-		"comment": "comment_metas",
-	}
-)
-
 // meta_typ is the table name, such as account, post, reply
 type Meta struct {
 	Id        int64
@@ -108,8 +98,28 @@ func AddMetaData(id interface{}, typ, key, value string, override bool) (*Meta, 
 	return &meta, nil
 }
 
-func getMetaTable(typ string) string {
-	return _metaTables[typ]
+// 更新meta
+func UpdateMetaData(id interface{}, typ, key, value string) (err error) {
+	var (
+		iid  = goutils.ToInt64(id, 0)
+		sid  = goutils.ToString(id, "")
+		meta Meta
+	)
+	// todo: apply_filter, do_action, etc...
+}
+
+// 删除一个meta
+func DelMetaData(d interface{}, typ, key string) {
+
+}
+
+// get meta
+func GetMetaData(id interface{}, typ, key string) (value string, err error) {
+
+}
+
+func HasMetaData() {
+
 }
 
 func sanitizeMeta(typ, key, value string) string {

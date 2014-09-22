@@ -49,14 +49,6 @@ type Account struct {
 	Messages      int   `json:"messages"`
 }
 
-type AccountMeta struct {
-	Id        int64
-	AccountId int64  `json:"account_id"`
-	ObjectId  string `json:"object_id"`
-	MetaKey   string `sql:"size:300" json:"meta_key"`
-	MetaValue string `sql:"size:100000" json:"meta_value"`
-}
-
 func getAccountDB() *gorm.DB {
 	return GetDB(ACCOUNT_DB)
 }

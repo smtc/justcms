@@ -42,15 +42,6 @@ type Post struct {
 	BlockCount      int       `json:"block_count"`
 }
 
-// PostMeta table
-type PostMeta struct {
-	Id        int64  `json:id`
-	PostId    int64  `json:"post_id"`
-	ObjectId  string `sql:"size:64" json:"object_id"`
-	MetaKey   string `sql:"size:300" json:"meta_key"`
-	MetaValue string `sql:"size:100000" json:"meta_value"`
-}
-
 // create new post
 // param:
 //   opt: map[string]interface{}
