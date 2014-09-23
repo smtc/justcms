@@ -267,6 +267,7 @@ func RegisterMeta() {
 }
 
 // get meta sql
-func getMetaSql() {
-
+// 目前仅考虑最简单的情况
+func getMetaSql(opts map[string]interface{}) (qc queryClause, err error) {
+	return
 }
