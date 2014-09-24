@@ -18,15 +18,14 @@ func init() {
 func dropTables() {
 	db := GetDB(DEFAULT_DB)
 	db.DropTableIfExists(Account{})
-	db.DropTableIfExists(AccountMeta{})
 
 	db.DropTableIfExists(Post{})
-	db.DropTableIfExists(PostMeta{})
 
 	db.DropTableIfExists(Reply{})
-	db.DropTableIfExists(ReplyMeta{})
 
 	db.DropTableIfExists(Link{})
+
+	db.DropTableIfExists(Meta{})
 
 	db.DropTableIfExists(Options{})
 

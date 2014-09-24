@@ -22,6 +22,15 @@ parse_query：
 
 get_post_types:
 
+register_post_type:
+	1 publicly_queryable为空时，取值public
+	2 show_ui为空时，取值public
+	3 show_in_menu为空或show_ui为false时，取值show_ui
+	4 show_in_admin_bar为空时，取值show_in_menu
+	5 show_in_nav_menus为空时，取值public
+	6 exclude_from_search为空时，取值public
+	7 
+	8 map_meta_cap为空时，设为false
 
 get_posts：
 	1 分析参数：parse_query;

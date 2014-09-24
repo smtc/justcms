@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -118,4 +119,76 @@ func parseOrderBy(orderby string) string {
 	// todo: meta_key
 
 	return allowed_keys[orderby]
+}
+
+//filter map
+// caution: interface{} must be simple values, or else it will panic!!!
+func filterMap(m []map[string]interface{}, cond map[string]interface{}, op string) []map[string]interface{} {
+	var (
+		match = 0
+		ret   = make([]map[string]interface{}, 0)
+	)
+
+	op = strings.ToUpper(op)
+	if op != "AND" && op != "OR" && op != "NOT" {
+		return ret
+	}
+	condCount := len(cond)
+
+	for _, v := range m {
+		match = 0
+		for ck, cv := range cond {
+			if v[ck] != nil && v[ck] == cv {
+				match++
+			}
+		}
+		if op == "AND" && match == condCount {
+			ret = append(ret, v)
+		}
+		if op == "OR" && match > 0 {
+			ret = append(ret, v)
+		}
+		if op == "NOT" && match == 0 {
+			ret = append(ret, v)
+		}
+	}
+	return ret
+}
+
+// merge src to dst
+//   if src has entry A and dst has no entry A, then dst will has entry A
+func mergeMap(src map[string]interface{}, dst map[string]interface{}) {
+	for key, value := range src {
+		if dst[key] == nil {
+			dst[key] = value
+		}
+	}
+}
+
+/**
+ * Sanitizes a string key.
+ *
+ * Keys are used as internal identifiers. Lowercase alphanumeric characters, dashes and underscores are allowed.
+ *
+ * @param string $key String key
+ * @return string Sanitized key
+ */
+var sanitizeRe = regexp.MustCompile("[^a-z0-9_\\-]")
+
+func sanitizeKey(key string) string {
+	raw_key := key
+	key = strings.ToLower(key)
+	key = sanitizeRe.ReplaceAllString(key, "")
+
+	/**
+	 * Filter a sanitized key string.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $key     Sanitized key.
+	 * @param string $raw_key The key prior to sanitization.
+	 */
+	_ = raw_key
+	//apply_filters( 'sanitize_key', $key, $raw_key );
+	return key
 }

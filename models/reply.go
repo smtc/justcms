@@ -65,11 +65,3 @@ type Reply struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
-
-type ReplyMeta struct {
-	Id            int64  `json:"id"`
-	ReplyId       int64  `json:"reply_id"`
-	ReplyObejctId string `sql:"size:64" json:"reply_objectid"`
-	MetaKey       string `sql:"size:300" json:"meta_key"`
-	MetaValue     string `sql:"size:100000" json:"meta_value"`
-}

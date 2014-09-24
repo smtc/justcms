@@ -53,13 +53,12 @@ func GetDB(model table_database) *gorm.DB {
 func InitDB() {
 	db := database.GetDB("")
 	db.AutoMigrate(Account{})
-	db.AutoMigrate(AccountMeta{})
+
+	db.AutoMigrate(Meta{})
 
 	db.AutoMigrate(Post{})
-	db.AutoMigrate(PostMeta{})
 
 	db.AutoMigrate(Reply{})
-	db.AutoMigrate(ReplyMeta{})
 
 	db.AutoMigrate(Link{})
 

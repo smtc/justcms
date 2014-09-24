@@ -1,7 +1,7 @@
 package models
 
 import (
-	//"fmt"
+	"fmt"
 	//"github.com/jinzhu/gorm"
 	"github.com/smtc/justcms/database"
 	//"log"
@@ -42,15 +42,6 @@ type Post struct {
 	BlockCount      int       `json:"block_count"`
 }
 
-// PostMeta table
-type PostMeta struct {
-	Id           int64  `json:id`
-	PostId       int64  `json:"post_id"`
-	PostObjectId string `sql:"size:64" json:"object_id"`
-	MetaKey      string `sql:"size:300" json:"meta_key"`
-	MetaValue    string `sql:"size:100000" json:"meta_value"`
-}
-
 // create new post
 // param:
 //   opt: map[string]interface{}
@@ -66,5 +57,44 @@ func NewPost(opt map[string]interface{}) (post *Post, err error) {
 func GetPostByObjectId(oid string) (post *Post, err error) {
 	db := database.GetDB("")
 	err = db.Where("object_id=?", oid).First(post).Error
+	return
+}
+
+// register post type
+func RegisterPostType(typ string, opts map[string]interface{}) (err error) {
+	defaultOpts := map[string]interface{}{
+		"labels":               []string{},
+		"description":          "",
+		"public":               false,
+		"hierarchical":         false,
+		"exclude_from_search":  "",
+		"publicly_queryable":   "",
+		"show_ui":              "",
+		"show_in_menu":         "",
+		"show_in_nav_menus":    "",
+		"show_in_admin_bar":    "",
+		"menu_position":        "",
+		"menu_icon":            "",
+		"capability_type":      "post",
+		"capabilities":         []string{},
+		"map_meta_cap":         "",
+		"supports":             []string{},
+		"register_meta_box_cb": "",
+		"taxonomies":           []string{},
+		"has_archive":          false,
+		"rewrite":              true,
+		"query_var":            true,
+		"can_export":           true,
+		"delete_with_user":     "",
+		"_builtin":             false,
+		"_edit_link":           "post.php?post=%d",
+	}
+	mergeMap(defaultOpts, opts)
+
+	postType := sanitizeKey(typ)
+	if len(postType) >= 20 {
+		return fmt.Errorf("post type length should NOT exceed 20.")
+	}
+
 	return
 }
