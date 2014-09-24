@@ -192,3 +192,217 @@ func sanitizeKey(key string) string {
 	//apply_filters( 'sanitize_key', $key, $raw_key );
 	return key
 }
+
+// 把value转换为sql表达式中的值
+//   如下几种情况：
+//      0 nil
+//      1 string
+//      2 []int64
+//      3 []string
+//      4 others
+func sqlValue(v interface{}) (string, bool) {
+	if v == nil {
+		return "''", false
+	}
+	if s, ok := v.(string); ok {
+		return "'" + s + "'", false
+	}
+	if sa, ok := v.([]string); ok {
+		var res string = "("
+		for i, s := range sa {
+			res += "'" + s + "'"
+			if i != len(sa)-1 {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+	}
+
+	arrlen := 0
+	switch v.(type) {
+	case int:
+		return fmt.Sprint(v), false
+	case int8:
+		return fmt.Sprint(v), false
+	case int16:
+		return fmt.Sprint(v), false
+	case int32:
+		return fmt.Sprint(v), false
+	case int64:
+		return fmt.Sprint(v), false
+	case uint:
+		return fmt.Sprint(v), false
+	case uint8:
+		return fmt.Sprint(v), false
+	case uint16:
+		return fmt.Sprint(v), false
+	case uint32:
+
+		return fmt.Sprint(v), false
+	case uint64:
+		return fmt.Sprint(v), false
+
+	case []int:
+		arrlen = len(v.([]int)) - 1
+		if arrlen < 0 {
+			return "''", false
+		}
+		res := "("
+		for i, ii := range v.([]int) {
+			res += fmt.Sprint(ii)
+			if i != arrlen-1 {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+	case []int8:
+		arrlen = len(v.([]int)) - 1
+		if arrlen < 0 {
+			return "''", false
+		}
+		res := "("
+		for i, ii := range v.([]int) {
+			res += fmt.Sprint(ii)
+			if i != arrlen-1 {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+	case []int16:
+		arrlen = len(v.([]int)) - 1
+		if arrlen < 0 {
+			return "''", false
+		}
+		res := "("
+		for i, ii := range v.([]int) {
+			res += fmt.Sprint(ii)
+			if i != arrlen-1 {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+	case []int32:
+		arrlen = len(v.([]int)) - 1
+		if arrlen < 0 {
+			return "''", false
+		}
+		res := "("
+		for i, ii := range v.([]int) {
+			res += fmt.Sprint(ii)
+			if i != arrlen-1 {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+	case []int64:
+		arrlen = len(v.([]int)) - 1
+		if arrlen < 0 {
+			return "''", false
+		}
+		res := "("
+		for i, ii := range v.([]int) {
+			res += fmt.Sprint(ii)
+			if i != arrlen-1 {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+	case []uint:
+		arrlen = len(v.([]int)) - 1
+		if arrlen < 0 {
+			return "''", false
+		}
+		res := "("
+		for i, ii := range v.([]int) {
+			res += fmt.Sprint(ii)
+			if i != arrlen-1 {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+	case []uint8:
+		arrlen = len(v.([]int)) - 1
+		if arrlen < 0 {
+			return "''", false
+		}
+		res := "("
+		for i, ii := range v.([]int) {
+			res += fmt.Sprint(ii)
+			if i != arrlen-1 {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+	case []uint16:
+		arrlen = len(v.([]int)) - 1
+		if arrlen < 0 {
+			return "''", false
+		}
+		res := "("
+		for i, ii := range v.([]int) {
+			res += fmt.Sprint(ii)
+			if i != arrlen-1 {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+	case []uint32:
+		arrlen = len(v.([]int)) - 1
+		if arrlen < 0 {
+			return "''", false
+		}
+		res := "("
+		for i, ii := range v.([]int) {
+			res += fmt.Sprint(ii)
+			if i != arrlen-1 {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+	case []uint64:
+		arrlen = len(v.([]int)) - 1
+		if arrlen < 0 {
+			return "''", false
+		}
+		res := "("
+		for i, ii := range v.([]int) {
+			res += fmt.Sprint(ii)
+			if i != arrlen-1 {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+
+	case []interface{}:
+		vv := v.([]interface{})
+		arrlen = len(vv) - 1
+		if arrlen < 0 {
+			return "''", false
+		}
+		res := "("
+		for i, vi := range vv {
+			res += "'" + fmt.Sprint(vi) + "'"
+			if i != arrlen {
+				res += ","
+			}
+		}
+		res += ")"
+		return res, true
+
+	default:
+		return fmt.Sprint(v), false
+	}
+
+	return "''", false
+}

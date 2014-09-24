@@ -336,6 +336,7 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 			// sid is unique, then typ is not needed
 			join = fmt.Sprintf(" INNER JOIN metas ON %s.id = meta.object_id", tn)
 		}
+		joins = append(joins, join)
 		for _, k := range onlyKeyQueries {
 			where = "meta.meta_key=" + k
 			wheres = append(wheres, where)
@@ -344,15 +345,25 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 
 	queries := queryOpt["queries"].([]map[string]interface{})
 	for _, query := range queries {
-		var key, value, compare, castType string
+		var (
+			isArray                       bool
+			key, value, compare, castType string
+		)
 		if key, ok = query["meta_key"].(string); !ok {
-			log.Println()
+			log.Println("getMetaSql: meta_key type should be string.")
 			continue
 		}
-		value = sqlValue(query["meta_value"])
-		compare = sqlCompare(query["meta_compare"])
+		value, isArray = sqlValue(query["meta_value"])
+		compare = sqlCompare(query["meta_compare"], isArray)
 		castType = getCastType(query["meta_cast_type"])
 
+		_ = key
+		_ = value
+		_ = compare
+		_ = castType
+		_ = joins
+		_ = wheres
+		_ = isArray
 	}
 
 	return
@@ -363,19 +374,28 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 //    1 nil
 //    2 string
 //    3 others
-func sqlCompare(c interface{}) string {
-	return "="
-}
+var _compares = map[string]string{"=": "=", "!=": "!=", ">": ">", ">=": ">=", "<": "<", "<=": "<=",
+	"LIKE": "LIKE", "NOT LIKE": "NOT LIKE",
+	"IN": "IN", "NOT IN": "NOT IN",
+	"BETWEEN": "BETWEEN", "NOT BETWEEN": "NOT BETWEEN",
+	"NOT EXISTS": "NOT EXISTS",
+	"REGEXP":     "REGEXP", "NOT REGEXP": "NOT REGEXP", "RLIKE": "RLIKE"}
 
-// 把value转换为sql表达式中的值
-//   如下几种情况：
-//      0 nil
-//      1 string
-//      2 []int64
-//      3 []string
-//      4 others
-func sqlValue(v interface{}) string {
-	return ""
+func sqlCompare(c interface{}, isArray bool) string {
+	if c == nil {
+		if isArray {
+			return "IN"
+		}
+		return "="
+	}
+	if s, ok := c.(string); ok {
+		s = strings.ToUpper(strings.TrimSpace(s))
+		if _compares[s] != "" {
+			return s
+		}
+		return "="
+	}
+	return "="
 }
 
 var castTypeReg = regexp.MustCompile("^(?:BINARY|CHAR|DATE|DATETIME|SIGNED|UNSIGNED|TIME|NUMERIC(?:\\(\\d+(?:,\\s?\\d+)?\\))?|DECIMAL(?:\\(\\d+(?:,\\s?\\d+)?\\))?)$")
