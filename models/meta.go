@@ -296,11 +296,12 @@ func RegisterMeta() {
 // id 字段，例如post_id, account_id, 或object_id
 func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc queryClause, err error) {
 	var (
-		ok     bool
-		iid    int64
-		sid    string
-		joins  []string
-		wheres []string
+		ok          bool
+		iid         int64
+		sid         string
+		joins       []string
+		wheres      []string
+		join, where string
 	)
 
 	typ = strings.TrimSpace(typ)
@@ -329,7 +330,6 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 			foreach ( $key_only_queries as $key => $q )
 				$where["key-only-$key"] = $wpdb->prepare( "$meta_table.meta_key = %s", trim( $q['key'] ) );
 		*/
-		var join, where string
 		if iid > 0 {
 			join = fmt.Sprintf(" INNER JOIN metas ON (%s.id = meta.target_id AND meta.typ = %s)", tn, typ)
 		} else {
@@ -346,6 +346,7 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 	queries := queryOpt["queries"].([]map[string]interface{})
 	for _, query := range queries {
 		var (
+			cnt                           int
 			isArray                       bool
 			key, value, compare, castType string
 		)
@@ -357,13 +358,49 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 		compare = sqlCompare(query["meta_compare"], isArray)
 		castType = getCastType(query["meta_cast_type"])
 
-		_ = key
-		_ = value
-		_ = compare
-		_ = castType
-		_ = joins
-		_ = wheres
-		_ = isArray
+		alias := "metas"
+		if cnt = len(joins); cnt != 0 {
+			alias = "mt" + fmt.Sprint(cnt)
+		}
+		if "NOT EXISTS" == compare {
+			join = "LEFT JOIN metas"
+			if cnt != 0 {
+				join += " AS " + alias
+			}
+			if iid > 0 {
+				join += fmt.Sprintf(" ON (%s.id = %s.target_id AND %s.typ = %s AND %s.meta_key = '%s')",
+					tn, alias, alias, typ, alias, key)
+			} else {
+				join += fmt.Sprintf(" ON (%s.id = %s.target_id AND %s.meta_key = '%s')",
+					tn, alias, alias, key)
+			}
+			joins = append(joins, join)
+			wheres = append(wheres, " "+alias+".meta_id IS NULL")
+			continue
+		}
+
+		join = "LEFT JOIN metas"
+		if cnt != 0 {
+			join += " AS " + alias
+		}
+		if iid > 0 {
+			join += fmt.Sprintf(" ON (%s.id = %s.target_id AND %s.typ = %s)",
+				tn, alias, alias, typ)
+		} else {
+			join += fmt.Sprintf(" ON (%s.id = %s.target_id)",
+				tn, alias)
+		}
+		where = ""
+		if key != "" {
+			where = alias + ".meta_key = " + key
+		}
+		if compare == "IN" || compare == "NOT IN" {
+		} else if compare == "BETWEEN" || compare == "NOT BETWEEN" {
+
+		} else if compare == "LIKE" || compare == "NOT LIKE" {
+
+		}
+
 	}
 
 	return
