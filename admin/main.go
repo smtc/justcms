@@ -37,6 +37,9 @@ func AdminMux() *web.Mux {
 
 	mux.Get(regexp.MustCompile(`^/admin/dynamic/struct/(?P<table>.+)/(?P<method>.+)$`), DynamicStruct)
 	mux.Get(regexp.MustCompile(`^/admin/dynamic/api/(?P<table>.+)/$`), DynamicList)
+	mux.Post(regexp.MustCompile(`^/admin/dynamic/api/(?P<table>.+)/$`), DynamicSave)
+	mux.Delete(regexp.MustCompile(`^/admin/dynamic/api/(?P<table>.+)/$`), DynamicDelete)
+	mux.Get(regexp.MustCompile(`^/admin/dynamic/api/(?P<table>.+)/(?P<id>.+)$`), DynamicEntity)
 
 	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+):(?P<param>.+)$`), templateHandler)
 	mux.Get(regexp.MustCompile(`^/admin/(?P<model>.+)\.(?P<fn>.+)$`), templateHandler)

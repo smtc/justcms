@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/smtc/goutils"
@@ -22,6 +23,8 @@ func ColumnList(c web.C, w http.ResponseWriter, r *http.Request) {
 		h.RenderError(err.Error())
 	}
 	table.Refresh()
+
+	fmt.Printf("%v", table.Columns)
 
 	list, _ := goutils.ToMapList(table.Columns, []string{}, goutils.FilterModeExclude)
 	h.RenderPage(list)

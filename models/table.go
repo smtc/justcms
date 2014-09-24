@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -96,7 +97,9 @@ func (t *Table) Refresh() error {
 		return err
 	}
 	t.Columns = nil
-	return db.Model(t).Related(&t.Columns).Order("name").Error
+	err = db.Model(t).Related(&t.Columns).Order("order_index").Error
+	sort.Sort(ColumnSort(t.Columns))
+	return err
 }
 
 func (t *Table) Save() error {
@@ -178,6 +181,16 @@ func (t *Table) Field(v interface{}) *Column {
 		}
 	}
 	return nil
+}
+
+func (t *Table) PrimaryKey() *[]Column {
+	keys := []Column{}
+	for _, c := range t.Columns {
+		if c.PrimaryKey {
+			keys = append(keys, c)
+		}
+	}
+	return &keys
 }
 
 func (t Table) MarshalJSON() ([]byte, error) {

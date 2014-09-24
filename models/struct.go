@@ -29,7 +29,8 @@ type Struct struct {
 	Status int                          `json:"status"`
 	Src    string                       `json:"src"`
 	Op     map[string]map[string]string `json:"op"`
-	Struct []StructItem                 `json:"struct"`
+	//Struct []StructItem                 `json:"struct"`
+	Items []map[string]interface{} `json:"struct"`
 }
 
 type StructItem struct {
@@ -47,18 +48,58 @@ type StructItem struct {
 func (s *Struct) GetStruct(t *Table) {
 	// src和op由调用方法填写
 	var (
-		items = []StructItem{}
-		i     StructItem
+		items = []map[string]interface{}{}
+		i     map[string]interface{}
 	)
 
+	var getType = func(tp string) string {
+		switch tp {
+		case BOOL:
+			return "bool"
+		case PASSWORD:
+			return "password"
+		case DATE, DATETIME:
+			return "date"
+		case INT, BIGINT:
+			return "integer"
+		case FLOAT, DOUBLE:
+			return "number"
+		}
+		return "text"
+	}
+
+	var getRequire = func(tp string, nn bool) bool {
+		return tp != BOOL && nn
+	}
+
 	for _, c := range t.Columns {
-		i = StructItem{}
-		i.Key = c.Name
-		i.Text = c.Alias
-		i.Require = c.NotNull
-		i.Maxlen = c.Size
+		i = map[string]interface{}{}
+		i["key"] = c.Name
+		i["text"] = c.Alias
+		i["edit"] = c.EditAble
+		i["type"] = getType(c.Type)
+		if getRequire(c.Type, c.NotNull) {
+			i["require"] = true
+		}
+		if c.Size > 0 {
+			i["maxlen"] = c.Size
+		}
 		items = append(items, i)
+
+		/*
+			if c.Type == PASSWORD {
+				i = map[string]interface{}{}
+				i["key"] = "re_" + c.Type
+				i["text"] = "重复" + c.Alias
+				i["edit"] = c.EditAble
+				i["type"] = getType(c.Type)
+				i["hide"] = true
+				i["equal"] = c.Name
+				i["tip"] = fmt.Sprintf("必须和%s相等", c.Alias)
+				items = append(items, i)
+			}
+		*/
 	}
 	s.Status = 1
-	s.Struct = items
+	s.Items = items
 }

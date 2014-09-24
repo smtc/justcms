@@ -23,6 +23,7 @@ const (
 	DATE           = "date"
 	DATETIME       = "datetime"
 	PICTURE        = "picture"
+	PASSWORD       = "password"
 
 	PRIVATE   = 0
 	PROTECTED = 1
@@ -48,6 +49,7 @@ var ColumnTypes = map[string]columnType{
 	DATE:           columnType{DATE, 0, ""},
 	DATETIME:       columnType{DATETIME, 0, ""},
 	PICTURE:        columnType{PICTURE, 255, ""},
+	PASSWORD:       columnType{PASSWORD, 128, ""},
 }
 
 var Filters = map[string]string{
@@ -77,6 +79,8 @@ type Column struct {
 	DefaultValue string    `sql:"size:512" json:"default_value"`
 	CreatedAt    time.Time `json:"created_at"`
 	EditAt       time.Time `json:"edit_at"`
+	EditAble     bool      `json:"edit_able"`
+	OrderIndex   int       `json:"order_index"`
 }
 
 func getColumnDB() *gorm.DB {
@@ -119,6 +123,11 @@ func (c *Column) Save() error {
 		}
 	} else {
 		old.Get(c.Id)
+
+		if old.Name == "id" {
+			return fmt.Errorf("column 'id' can't rename.")
+		}
+
 		c.CreatedAt = old.CreatedAt
 		d.ChangeColumn(ndb, c, old.Name, table.Name)
 	}
@@ -149,6 +158,12 @@ func ColumnDelete(where string, data ...interface{}) error {
 		return err
 	}
 
+	for _, c := range columns {
+		if c.Name == "id" {
+			return fmt.Errorf("column 'id' can't remove.")
+		}
+	}
+
 	table, _ = GetTable(columns[0].TableId)
 	d.DropColumn(ndb, columns, table.Name)
 	err = db.Where(where, data...).Delete(&Column{}).Error
@@ -170,6 +185,22 @@ func ColumnList(tableIds []int64) ([]Column, error) {
 		where = "table_id in (?)"
 	}
 
-	err := db.Where(where, tableIds).Find(&cols).Error
+	err := db.Where(where, tableIds).Order("order_index").Find(&cols).Error
 	return cols, err
+}
+
+// sort =========================================================
+
+type ColumnSort []Column
+
+func (c ColumnSort) Len() int {
+	return len(c)
+}
+
+func (c ColumnSort) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
+}
+
+func (c ColumnSort) Less(i, j int) bool {
+	return c[i].OrderIndex < c[j].OrderIndex
 }
