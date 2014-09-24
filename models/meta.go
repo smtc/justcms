@@ -5,8 +5,12 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/smtc/goutils"
 	"github.com/smtc/justcms/database"
+	"log"
+	"regexp"
+	"strings"
 )
 
+// 本文有一个地方处理与wordpress不同，有可能造成sql语句查询结果错误，需要进一步验证，见parseMetaVar函数 ———— guotie 2014-09-24
 // meta_typ is the table name, such as account, post, reply
 type Meta struct {
 	Id        int64
@@ -268,6 +272,247 @@ func RegisterMeta() {
 
 // get meta sql
 // 目前仅考虑最简单的情况
-func getMetaSql(opts map[string]interface{}) (qc queryClause, err error) {
+/*
+	opts:
+	{
+		"relation": xx, // "OR", "AND"
+		"queries":[
+		 	{
+				"meta_key":     xx,
+				"meta_cast_type":     xx,
+				"meta_value":   xx,
+				"meta_compare": xx
+			},
+			{
+				"meta_key":xxx,
+				"meta_value":xxx,
+				"meta_compare":xx
+			}
+		],
+		"onlyKeyQueries": ["key1", "key2"]
+*/
+// typ 用于查找属于哪个表的meta，例如account，post，reply等
+// tn  主表名称，例如posts, accounts, replies
+// id 字段，例如post_id, account_id, 或object_id
+func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc queryClause, err error) {
+	var (
+		ok     bool
+		iid    int64
+		sid    string
+		joins  []string
+		wheres []string
+	)
+
+	typ = strings.TrimSpace(typ)
+	tn = strings.TrimSpace(tn)
+	if typ == "" || tn == "" {
+		err = fmt.Errorf("getMetaSql: param typ & tn should NOT be empty.")
+		return
+	}
+	queryOpt, err := parseMetaVar(opts)
+	if err != nil {
+		return
+	}
+
+	iid = goutils.ToInt64(id, 0)
+	sid = goutils.ToString(id, "")
+	if iid <= 0 && sid == "" {
+		err = fmt.Errorf("getMetaSql: param Id should not be empty.")
+		return
+	}
+
+	onlyKeyQueries := queryOpt["onlyKeyQueries"].([]string)
+	if len(onlyKeyQueries) > 0 {
+		/*
+			$join[]  = "INNER JOIN $meta_table ON $primary_table.$primary_id_column = $meta_table.$meta_id_column";
+
+			foreach ( $key_only_queries as $key => $q )
+				$where["key-only-$key"] = $wpdb->prepare( "$meta_table.meta_key = %s", trim( $q['key'] ) );
+		*/
+		var join, where string
+		if iid > 0 {
+			join = fmt.Sprintf(" INNER JOIN metas ON (%s.id = meta.target_id AND meta.typ = %s)", tn, typ)
+		} else {
+			// sid is unique, then typ is not needed
+			join = fmt.Sprintf(" INNER JOIN metas ON %s.id = meta.object_id", tn)
+		}
+		for _, k := range onlyKeyQueries {
+			where = "meta.meta_key=" + k
+			wheres = append(wheres, where)
+		}
+	}
+
+	queries := queryOpt["queries"].([]map[string]interface{})
+	for _, query := range queries {
+		var key, value, compare, castType string
+		if key, ok = query["meta_key"].(string); !ok {
+			log.Println()
+			continue
+		}
+		value = sqlValue(query["meta_value"])
+		compare = sqlCompare(query["meta_compare"])
+		castType = getCastType(query["meta_cast_type"])
+
+	}
+
+	return
+}
+
+// 把compare比较转换为string
+// 如下几种情况：
+//    1 nil
+//    2 string
+//    3 others
+func sqlCompare(c interface{}) string {
+	return "="
+}
+
+// 把value转换为sql表达式中的值
+//   如下几种情况：
+//      0 nil
+//      1 string
+//      2 []int64
+//      3 []string
+//      4 others
+func sqlValue(v interface{}) string {
+	return ""
+}
+
+var castTypeReg = regexp.MustCompile("^(?:BINARY|CHAR|DATE|DATETIME|SIGNED|UNSIGNED|TIME|NUMERIC(?:\\(\\d+(?:,\\s?\\d+)?\\))?|DECIMAL(?:\\(\\d+(?:,\\s?\\d+)?\\))?)$")
+
+func getCastType(i interface{}) string {
+	s, ok := i.(string)
+	if !ok {
+		return "CHAR"
+	}
+	s = strings.ToUpper(strings.TrimSpace(s))
+	if s == "" {
+		return "CHAR"
+	}
+	//if ( ! preg_match( '/^(?:BINARY|CHAR|DATE|DATETIME|SIGNED|UNSIGNED|TIME|NUMERIC(?:\(\d+(?:,\s?\d+)?\))?|DECIMAL(?:\(\d+(?:,\s?\d+)?\))?)$/', $meta_type ) )
+	//	return 'CHAR';
+
+	if "NUMERIC" == s {
+		return "SIGNED"
+	}
+	return s
+}
+
+// 判断参数是否为空：
+//    1 数组，但没有元素
+//    2 空字符串
+//    3 nil interface{}
+func isEmpty(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+	if a, ok := i.([]interface{}); ok {
+		if len(a) == 0 {
+			return true
+		}
+		return false
+	}
+	if s, ok := i.(string); ok {
+		if s == "" {
+			return true
+		}
+		return false
+	}
+	return false
+}
+
+// 格式化opts参数, 传入getMetaSql
+//  opts["meta_relation"] 覆盖默认的relation(AND)
+func parseMetaVar(opts map[string]interface{}) (metaOpt map[string]interface{}, err error) {
+	var query = map[string]interface{}{}
+
+	metaOpt["relation"] = "AND"
+	if opts["meta_relation"] != nil {
+		if rel, ok := opts["meta_relation"].(string); ok {
+			metaOpt["relation"] = rel
+		} else {
+			log.Println("parseMetaVar: opts[\"meta_relation\"] type is NOT string, use default \"AND\" relation")
+		}
+	}
+
+	queries := make([]map[string]interface{}, 0)
+	onlyKeyQueries := make([]string, 0)
+
+	if opts["meta_key"] != nil {
+		query["meta_key"] = opts["meta_key"]
+	}
+	if opts["meta_compare"] != nil {
+		query["meta_compare"] = opts["meta_compare"]
+	}
+	if opts["meta_value"] != nil {
+		query["meta_value"] = opts["meta_value"]
+	}
+	if opts["meta_cast_type"] != nil {
+		query["meta_cast_type"] = opts["meta_cast_type"]
+	}
+
+	// FIX Me!!!
+	// 这里与wordpress meta.php中的处理不同，wordprss只有当query["value"]为数组且为空数组时，才将query放入到onlyKeyQuery中
+	// 而query["value"]为空字符串时，还是在query数组中处理，但后面的似乎是一样的
+
+	if isEmpty(query["meta_value"]) {
+		if s, ok := query["meta_key"].(string); ok {
+			s = strings.TrimSpace(s)
+			if s != "" {
+				onlyKeyQueries = append(onlyKeyQueries, s)
+			} else {
+				log.Println("parseMetaVar: meta_key should NOT empty when meta_value is empty.")
+			}
+		} else {
+			log.Println("parseMetaVar: meta_key should be string")
+		}
+	} else {
+		queries = append(queries, query)
+	}
+
+	if opts["meta_query"] != nil {
+		var (
+			ok bool
+			q  map[string]interface{}
+			qa []map[string]interface{}
+		)
+		// 有可能是map[string]interface{}类型或[]map[string]interface{}类型
+		if q, ok = opts["meta_query"].(map[string]interface{}); ok {
+			qa = append(qa, q)
+		} else {
+			qa, ok = opts["meta_query"].([]map[string]interface{})
+		}
+
+		if ok {
+			for _, q := range qa {
+				if isEmpty(q["meta_value"]) {
+					if s, ok := query["meta_key"].(string); ok {
+						s = strings.TrimSpace(s)
+						if s != "" {
+							onlyKeyQueries = append(onlyKeyQueries, s)
+						} else {
+							log.Println("parseMetaVar: meta_key should NOT empty when meta_value is empty.")
+						}
+					} else {
+						log.Println("parseMetaVar: meta_key should be string")
+					}
+				} else {
+					queries = append(queries, q)
+				}
+			}
+		} else {
+			// 非法的meta_query
+			log.Println("parseMetaVar: opts[\"meta_query\"] type is NOT map[string]interface{} or []map[string]interface{}, ignored")
+		}
+	}
+
+	if len(queries) == 0 && len(onlyKeyQueries) == 0 {
+		err = fmt.Errorf("parseMetaVar: no valid queries")
+		return
+	}
+
+	metaOpt["queries"] = queries
+	metaOpt["onlyKeyQueries"] = onlyKeyQueries
+
 	return
 }
