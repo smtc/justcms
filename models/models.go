@@ -16,7 +16,9 @@ type driver interface {
 	AddColumn(db *gorm.DB, c *Column, table string) error
 	DropColumn(db *gorm.DB, columns []Column, table string) error
 	ChangeColumn(db *gorm.DB, c *Column, old, table string) error
-	GetPage(db *gorm.DB, t *Table, page, size int) (interface{}, int, error)
+	GetPage(db *gorm.DB, t *Table, where string, page, size int) (interface{}, int, error)
+	SaveEntity(db *gorm.DB, t *Table, entity map[string]interface{}) error
+	RemoveEntities(db *gorm.DB, tn string, ids []int64) error
 }
 
 func GetDriver() driver {

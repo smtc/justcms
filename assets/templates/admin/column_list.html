@@ -19,10 +19,11 @@
                     <th>长度</th>
                     <th>主键</th>
                     <th>必填</th>
+                    <th>可编辑</th>
                     <th>查询条件</th>
                     <th>中文名</th>
                     <th>描述</th>
-                    <th>创建时间</th>
+                    <th>排序</th>
                     <th>修改时间</th>
                 </tr>
             </thead>
@@ -37,10 +38,11 @@
                     <td>{{size}}</td>
                     <td v-html="primary_key|icon"></td>
                     <td v-html="not_null|icon"></td>
+                    <td v-html="edit_able|icon"></td>
                     <td>{{filter}}</td>
                     <td>{{alias}}</td>
                     <td>{{des}}</td>
-                    <td>{{created_at}}</td>
+                    <td>{{order_index}}</td>
                     <td>{{edit_at}}</td>
                 </tr>
             </tbody>

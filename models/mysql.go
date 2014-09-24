@@ -130,9 +130,12 @@ func (m *mysql) ChangeColumn(db *gorm.DB, c *Column, old, table string) error {
 	return m.exec(db, sqlStr)
 }
 
-func (m *mysql) GetPage(db *gorm.DB, t *Table, page, size int) (interface{}, int, error) {
-	sqlStr := "SELECT * FROM `%s` WHERE 1=1 %s limit %d, %d;"
-	sqlStr = fmt.Sprintf(sqlStr, t.Name, "", (page-1)*size, size)
+func (m *mysql) GetPage(db *gorm.DB, t *Table, where string, page, size int) (interface{}, int, error) {
+	sqlStr := "SELECT * FROM `%s` %s limit %d, %d;"
+	if where != "" {
+		where = "where " + where
+	}
+	sqlStr = fmt.Sprintf(sqlStr, t.Name, where, (page-1)*size, size)
 
 	rows, err := db.NewScope(nil).DB().Query(sqlStr)
 	defer rows.Close()
@@ -181,4 +184,59 @@ func (m *mysql) GetPage(db *gorm.DB, t *Table, page, size int) (interface{}, int
 		results = append(results, result)
 	}
 	return results, 0, nil
+}
+
+func (m *mysql) SaveEntity(db *gorm.DB, t *Table, entity map[string]interface{}) error {
+	var (
+		id     int64
+		keys   = []string{}
+		vals   = []string{}
+		sqlStr = ""
+		getter = goutils.Getter(entity)
+	)
+
+	for _, c := range t.Columns {
+		if (c.Name == "id" || entity[c.Name] == nil) && c.Type != BOOL {
+			continue
+		}
+
+		keys = append(keys, "`"+c.Name+"`")
+		switch c.Type {
+		case DATE, DATETIME:
+			var ft string
+			if c.Type == DATE {
+				ft = "2006-01-02"
+			} else {
+				ft = goutils.TIMEFORMAT
+			}
+			d := getter.GetTime(c.Name, goutils.TIMEDEFAULT, ft)
+			vals = append(vals, fmt.Sprintf("%d", d.Unix()))
+		case BOOL:
+			b := getter.GetBool(c.Name, false)
+			vals = append(vals, fmt.Sprintf("%v", b))
+		default:
+			vals = append(vals, "'"+getter.GetString(c.Name, "")+"'")
+		}
+	}
+
+	id = getter.GetInt64("id", 0)
+	if id == 0 {
+		// insert
+		sqlStr = fmt.Sprintf("INSERT INTO `%s` (%s) VALUE (%s);", t.Name, strings.Join(keys, ","), strings.Join(vals, ","))
+	} else {
+		// update
+		sets := []string{}
+		for i, k := range keys {
+			sets = append(sets, k+"="+vals[i])
+		}
+
+		sqlStr = fmt.Sprintf("UPDATE `%s` SET %s WHERE `id`=%d;", t.Name, strings.Join(sets, ","), id)
+	}
+
+	return m.exec(db, sqlStr)
+}
+
+func (m *mysql) RemoveEntities(db *gorm.DB, tn string, ids []int64) error {
+	sqlStr := fmt.Sprintf("DELETE FROM `%s` WHERE `id` in (%v);", tn, goutils.ToString(ids, ""))
+	return m.exec(db, sqlStr)
 }
