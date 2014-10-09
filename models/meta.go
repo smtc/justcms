@@ -293,7 +293,7 @@ func RegisterMeta() {
 */
 // typ 用于查找属于哪个表的meta，例如account，post，reply等
 // tn  主表名称，例如posts, accounts, replies
-// id 字段，例如post_id, account_id, 或object_id
+// id  字段，例如post_id, account_id, 或object_id
 func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc queryClause, err error) {
 	var (
 		ok          bool
@@ -346,9 +346,10 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 	queries := queryOpt["queries"].([]map[string]interface{})
 	for _, query := range queries {
 		var (
-			cnt                           int
-			isArray                       bool
-			key, value, compare, castType string
+			cnt                    int
+			isArray                bool
+			value, meta_values     string
+			key, compare, castType string
 		)
 		if key, ok = query["meta_key"].(string); !ok {
 			log.Println("getMetaSql: meta_key type should be string.")
@@ -390,19 +391,48 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 			join += fmt.Sprintf(" ON (%s.id = %s.target_id)",
 				tn, alias)
 		}
+		joins = append(joins, join)
+
+		// build where condition
 		where = ""
 		if key != "" {
 			where = alias + ".meta_key = " + key
 		}
 		if compare == "IN" || compare == "NOT IN" {
+			meta_values = "(" + value + ")"
 		} else if compare == "BETWEEN" || compare == "NOT BETWEEN" {
-
+			segs := strings.Split(value, ",")
+			if len(segs) != 2 {
+				err = fmt.Errorf("MetaSql: compare condition is BETWEEN, but the value is NOT 2")
+				return
+			}
+			meta_values = segs[0] + " AND " + segs[1]
 		} else if compare == "LIKE" || compare == "NOT LIKE" {
-
+			meta_values = "%" + value + "%"
+		} else {
+			meta_values = value
 		}
+		if where != "" {
+			where = where + " AND "
+		}
+		where = " (" + where + fmt.Sprintf("CAST(%s.meta_valueAS %s) %s %s)", alias, castType, compare, meta_values)
 
+		wheres = append(wheres, where)
 	}
 
+	if len(wheres) == 0 {
+		qc.where = ""
+	} else {
+		qc.where = " AND (" + strings.Join(wheres, "\n"+fmt.Sprint(queryOpt["relation"])) + " )"
+	}
+	qc.join = " " + strings.Join(joins, "\n")
+
+	/*
+		TODO: wordpress apply filter
+
+		apply_filters_ref_array( 'get_meta_sql', array( compact( 'join', 'where' ),
+					 $this->queries, $type, $primary_table, $primary_id_column, $context ) );
+	*/
 	return
 }
 

@@ -15,7 +15,7 @@ type Post struct {
 	AuthorId   int64     `json:"author_id"`
 	AuthorName string    `sql:"size:40" json:"author_name"`
 	Title      string    `sql:"size:60" json:"title"`
-	Content    string    `sql:"size:100000" json:"content"`
+	Content    string    `sql:"type:TEXT" json:"content"`
 	PostStatus string    `sql:"size:20" json:"post_status"`
 	Excerpt    string    `sql:"size:500" json:"excerpt"`
 	PostAt     time.Time `json:"post_at"`
