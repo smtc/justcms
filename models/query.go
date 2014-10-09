@@ -510,7 +510,7 @@ func GetPosts(req *http.Request) (posts []*Post, err error) {
 func getPosts(opt map[string]interface{}) (posts []*Post, err error) {
 	var (
 		post  Post
-		where string
+		where []string
 	)
 
 	db := database.GetDB("")
@@ -532,7 +532,8 @@ func getPosts(opt map[string]interface{}) (posts []*Post, err error) {
 		return
 	}
 
-	where := buildWhereClause(opt)
+	where, err = buildWhereClause(opt)
+	_ = where
 	// 查询多个posts
 	err = db.Find(&posts).Error
 

@@ -95,3 +95,9 @@ func GetInt64Option(name string) (val int64, err error) {
 	}
 	return
 }
+
+// update options
+// 2014-10-10
+func updateOptions() {
+
+}
