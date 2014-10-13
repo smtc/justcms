@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/smtc/goutils"
@@ -18,7 +19,7 @@ type Meta struct {
 	TargetId  int64  `json:"target_id"`
 	ObjectId  string `sql:"size:64" json:"object_id"`
 	MetaKey   string `sql:"size:300" json:"meta_key"`
-	MetaValue string `sql:"size:100000" json:"meta_value"`
+	MetaValue string `sql:"type:text" json:"meta_value"`
 }
 
 // deal with xxx_meta table
@@ -103,7 +104,7 @@ func AddMetaData(id interface{}, typ, key, value string, override bool) (*Meta, 
 }
 
 // 更新meta
-func UpdateMetaData(id interface{}, typ, key, value string) (err error) {
+func UpdateMetaData(id interface{}, typ, key, value string, insert bool) (err error) {
 	var (
 		iid  = goutils.ToInt64(id, 0)
 		sid  = goutils.ToString(id, "")
@@ -128,6 +129,15 @@ func UpdateMetaData(id interface{}, typ, key, value string) (err error) {
 		err = db.Where("objetc_id=?", sid).Where("meta_key=?", key).Find(&meta).Error
 	}
 	if err != nil {
+		if err == gorm.RecordNotFound && insert {
+			meta.TargetId = iid
+			meta.ObjectId = sid
+			meta.MetaTyp = typ
+			meta.MetaKey = key
+			meta.MetaValue = value
+			err = db.Save(&meta).Error
+			return
+		}
 		// 不存在时, 返回错误
 		return err
 	}
@@ -224,6 +234,25 @@ func GetMetaData(id interface{}, typ, key string) (value string, err error) {
 	value = meta.MetaValue
 
 	return
+}
+
+func ScanMetaData(id interface{}, typ, key string, value interface{}) error {
+	var (
+		iid = goutils.ToInt64(id, 0)
+		sid = goutils.ToString(id, "")
+		row *sql.Row
+	)
+	// todo: apply_filter, do_action, etc...
+
+	db := database.GetDB("")
+	if iid > 0 {
+		row = db.Model(Meta{}).Where("target_id=?", iid).Where("meta_typ=?", typ).Where("meta_key=?", key).Select("meta_value").Row()
+	} else {
+		// ObjectId 是全局唯一, 不需要type作为条件
+		row = db.Model(Meta{}).Where("objetc_id=?", sid).Where("meta_key=?", key).Select("meta_value").Row()
+	}
+	err := row.Scan(value)
+	return err
 }
 
 // 是否存在meta key

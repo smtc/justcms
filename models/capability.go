@@ -1,6 +1,7 @@
 package models
 
 import (
+	drv "database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -19,6 +20,12 @@ type Role struct {
 	Name         string          `json:"name"`
 	DisplayName  string          `json:"display_name"`
 	Capabilities map[string]bool `json:"capabilities"`
+}
+
+type AccountCap struct {
+	Roles   []string        `json:"roles"`
+	Caps    map[string]bool `json:"caps"`
+	AllCaps map[string]bool `json:"-"`
 }
 
 // 更新role到数据库中
@@ -86,7 +93,48 @@ func (r *Role) hasCap(cap string) bool {
 	return false
 }
 
+func (ac *AccountCap) Scan(src interface{}) error {
+	buf, ok := src.([]byte)
+	if !ok {
+		return fmt.Errorf("AccountCap Scan: cannot convert src(%v) to byte", src)
+	}
+	err := json.Unmarshal([]byte(buf), ac)
+	return err
+}
+
+func (ac AccountCap) Value() (drv.Value, error) {
+	buf, err := json.Marshal(ac)
+	if err != nil {
+		return nil, err
+	}
+	return string(buf), nil
+}
+
 // Account role interface
+
+func (a *Account) GetCaps() error {
+	if a.Capability == nil {
+		a.Capability = &AccountCap{}
+	}
+	err := ScanMetaData(a.Id, "users", "capability", a.Capability)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *Account) SetCaps() error {
+	if a.Capability == nil {
+		return fmt.Errorf("capability is nil")
+	}
+	val, err := a.Capability.Value()
+	if err != nil {
+		return err
+	}
+
+	return UpdateMetaData(a.Id, "users", "capability", val.(string), true)
+}
+
 func (a *Account) AddRole(rname string) {
 
 }

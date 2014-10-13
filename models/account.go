@@ -1,11 +1,11 @@
 package models
 
 import (
+	//"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/jinzhu/gorm"
 	"github.com/smtc/goutils"
+	"time"
 )
 
 // 账号管理
@@ -47,6 +47,11 @@ type Account struct {
 	Yellowcards   int   `json:"yellow_cards"`
 	Notifications int   `json:"notifications"`
 	Messages      int   `json:"messages"`
+
+	// user capability
+	Capability *AccountCap `json:"capability" sql:"-"`
+	// other meta data
+	metaData map[string]interface{} `json:"-" sql:"-"`
 }
 
 func getAccountDB() *gorm.DB {
