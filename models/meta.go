@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"github.com/smtc/goutils"
+	//"github.com/smtc/goutils"
 	"github.com/smtc/justcms/database"
 	"log"
 	"regexp"
@@ -16,7 +16,6 @@ import (
 type Meta struct {
 	Id        int64
 	MetaTyp   string `sql:"size:64" json:"meta_typ"`
-	TargetId  int64  `json:"target_id"`
 	ObjectId  string `sql:"size:64" json:"object_id"`
 	MetaKey   string `sql:"size:300" json:"meta_key"`
 	MetaValue string `sql:"type:text" json:"meta_value"`
@@ -45,20 +44,23 @@ type Meta struct {
 
 // Add metadata for the specified object.
 //
-func AddMetaData(id interface{}, typ, key, value string, override bool) (*Meta, error) {
+func AddMetaData(sid string, typ, key, value string, override bool) (*Meta, error) {
 	var (
-		iid   = goutils.ToInt64(id, 0)
-		sid   = goutils.ToString(id, "")
 		err   error
 		meta  Meta
 		count int
 	)
-	if typ == "" || key == "" {
-		err = fmt.Errorf("type or key invalid")
+
+	if key == "" {
+		err = fmt.Errorf("key invalid")
 		return nil, err
 	}
 
-	if iid <= 0 && sid == "" {
+	if typ == "" {
+		return nil, fmt.Errorf("type invalid")
+	}
+
+	if sid == "" {
 		err = fmt.Errorf("id is invalid")
 		return nil, err
 	}
@@ -66,32 +68,24 @@ func AddMetaData(id interface{}, typ, key, value string, override bool) (*Meta, 
 	mvalue := sanitizeMeta(typ, key, value)
 	// todo: apply_filter: "add_{{typ}}_metadata"
 	db := database.GetDB("")
-	if override {
-		if iid > 0 {
-			err = db.Table("metas").Where("meta_key=?", key).Where("target_id=?", iid).Where("meta_typ=?", typ).Count(&count).Error
-		} else {
-			err = db.Table("metas").Where("meta_key=?", key).Where("object_id=%d", sid).Where("meta_typ=?", typ).Count(&count).Error
-		}
+	if override == false {
+		err = db.Table("metas").Where("meta_key=?", key).Where("object_id=%d", sid).Where("meta_typ=?", typ).Count(&count).Error
+
 		if err != nil {
 			return nil, err
 		}
 		if count > 0 {
-			return nil, fmt.Errorf("meta key %s for %s %d has exist: %d", key, typ, id, count)
+			return nil, fmt.Errorf("meta key %s for %s has exist: %d", key, typ, count)
 		}
 	}
 	// todo: do_action: "add_{{typ}}_meta"
 
-	if iid > 0 {
-		err = db.Where("target_id=?", iid).Where("meta_typ=?", typ).Where("meta_key=?", key).Find(&meta).Error
-	} else {
-		// ObjectId 是全局唯一
-		err = db.Where("objetc_id=?", sid).Where("meta_key=?", key).Find(&meta).Error
+	// ObjectId 是全局唯一
+	err = db.Where("object_id=?", sid).Where("meta_key=?", key).Find(&meta).Error
 
-	}
 	if err != nil && err != gorm.RecordNotFound {
 		return nil, err
 	}
-	meta.TargetId = iid
 	meta.ObjectId = sid
 	meta.MetaTyp = typ
 	meta.MetaKey = key
@@ -104,33 +98,21 @@ func AddMetaData(id interface{}, typ, key, value string, override bool) (*Meta, 
 }
 
 // 更新meta
-func UpdateMetaData(id interface{}, typ, key, value string, insert bool) (err error) {
-	var (
-		iid  = goutils.ToInt64(id, 0)
-		sid  = goutils.ToString(id, "")
-		meta Meta
-	)
-	if typ == "" || key == "" {
-		err = fmt.Errorf("type or key invalid")
-		return
-	}
+func UpdateMetaData(sid string, typ, key, value string, insert bool) (err error) {
+	var meta Meta
 
-	if iid <= 0 && sid == "" {
-		err = fmt.Errorf("id is invalid")
+	if sid == "" {
+		err = fmt.Errorf("sid is invalid")
 		return
 	}
 	// todo: apply_filter, do_action, etc...
 
 	db := database.GetDB("")
-	if iid > 0 {
-		err = db.Where("target_id=?", iid).Where("meta_typ=?", typ).Where("meta_key=?", key).Find(&meta).Error
-	} else {
-		// ObjectId 是全局唯一, 不需要type作为条件
-		err = db.Where("objetc_id=?", sid).Where("meta_key=?", key).Find(&meta).Error
-	}
+
+	// ObjectId 是全局唯一, 不需要type作为条件
+	err = db.Where("object_id=?", sid).Where("meta_key=?", key).Find(&meta).Error
 	if err != nil {
 		if err == gorm.RecordNotFound && insert {
-			meta.TargetId = iid
 			meta.ObjectId = sid
 			meta.MetaTyp = typ
 			meta.MetaKey = key
@@ -151,31 +133,25 @@ func UpdateMetaData(id interface{}, typ, key, value string, insert bool) (err er
 }
 
 // 删除一个meta
-func DelMetaData(id interface{}, typ, key string) (err error) {
-	var (
-		iid  = goutils.ToInt64(id, 0)
-		sid  = goutils.ToString(id, "")
-		meta Meta
-	)
-	if typ == "" || key == "" {
-		err = fmt.Errorf("type or key invalid")
-		return
+func DelMetaData(sid string, key string) (err error) {
+	var meta Meta
+
+	if key == "" {
+		return fmt.Errorf("key should not empty")
 	}
 
-	if iid <= 0 && sid == "" {
-		err = fmt.Errorf("id is invalid")
+	if sid == "" {
+		err = fmt.Errorf("sid is invalid")
 		return
 	}
 
 	// todo: apply_filter, do_action, etc...
 
 	db := database.GetDB("")
-	if iid > 0 {
-		err = db.Where("target_id=?", iid).Where("meta_typ=?", typ).Where("meta_key=?", key).Find(&meta).Error
-	} else {
-		// ObjectId 是全局唯一, 不需要type作为条件
-		err = db.Where("objetc_id=?", sid).Where("meta_key=?", key).Find(&meta).Error
-	}
+
+	// ObjectId 是全局唯一, 不需要type作为条件
+	err = db.Where("object_id=?", sid).Where("meta_key=?", key).Find(&meta).Error
+
 	if err != nil {
 		return err
 	}
@@ -184,49 +160,34 @@ func DelMetaData(id interface{}, typ, key string) (err error) {
 }
 
 // get all metas of id & typ
-func GetMetas(id interface{}, typ string) (metas []Meta, err error) {
-	var (
-		iid = goutils.ToInt64(id, 0)
-		sid = goutils.ToString(id, "")
-	)
-	if typ == "" {
-		err = fmt.Errorf("type or key invalid")
+func GetMetas(sid string, key string) (metas []Meta, err error) {
+	if key == "" {
+		err = fmt.Errorf("key invalid")
 		return
 	}
 
-	if iid <= 0 && sid == "" {
-		err = fmt.Errorf("id is invalid")
+	if sid == "" {
+		err = fmt.Errorf("sid is invalid")
 		return
 	}
 
 	// todo: apply_filter, do_action, etc...
 
 	db := database.GetDB("")
-	if iid > 0 {
-		err = db.Where("meta_typ=?", typ).Where("target_id=?", iid).Find(&metas).Error
-	} else {
-		err = db.Where("meta_typ=?", typ).Where("object_id=?", sid).Find(&metas).Error
-	}
+	err = db.Where("object_id=?", sid).Find(&metas).Error
 
 	return
 }
 
 // get meta
-func GetMetaData(id interface{}, typ, key string) (value string, err error) {
-	var (
-		iid  = goutils.ToInt64(id, 0)
-		sid  = goutils.ToString(id, "")
-		meta Meta
-	)
+func GetMetaData(sid string, key string) (value string, err error) {
+	var meta Meta
 	// todo: apply_filter, do_action, etc...
 
 	db := database.GetDB("")
-	if iid > 0 {
-		err = db.Where("target_id=?", iid).Where("meta_typ=?", typ).Where("meta_key=?", key).Find(&meta).Error
-	} else {
-		// ObjectId 是全局唯一, 不需要type作为条件
-		err = db.Where("objetc_id=?", sid).Where("meta_key=?", key).Find(&meta).Error
-	}
+
+	// ObjectId 是全局唯一, 不需要type作为条件
+	err = db.Where("object_id=?", sid).Where("meta_key=?", key).Find(&meta).Error
 
 	if err != nil {
 		return
@@ -236,42 +197,32 @@ func GetMetaData(id interface{}, typ, key string) (value string, err error) {
 	return
 }
 
-func ScanMetaData(id interface{}, typ, key string, value interface{}) error {
-	var (
-		iid = goutils.ToInt64(id, 0)
-		sid = goutils.ToString(id, "")
-		row *sql.Row
-	)
+func ScanMetaData(sid string, key string, value interface{}) error {
+	var row *sql.Row
+
 	// todo: apply_filter, do_action, etc...
 
 	db := database.GetDB("")
-	if iid > 0 {
-		row = db.Model(Meta{}).Where("target_id=?", iid).Where("meta_typ=?", typ).Where("meta_key=?", key).Select("meta_value").Row()
-	} else {
-		// ObjectId 是全局唯一, 不需要type作为条件
-		row = db.Model(Meta{}).Where("objetc_id=?", sid).Where("meta_key=?", key).Select("meta_value").Row()
-	}
+	// ObjectId 是全局唯一, 不需要type作为条件
+	row = db.Model(Meta{}).Where("object_id=?", sid).Where("meta_key=?", key).Select("meta_value").Row()
+
 	err := row.Scan(value)
 	return err
 }
 
 // 是否存在meta key
-func HasMetaData(id interface{}, typ, key string) bool {
+func HasMetaData(sid string, key string) bool {
 	var (
-		iid   = goutils.ToInt64(id, 0)
-		sid   = goutils.ToString(id, "")
 		err   error
 		count int
 	)
 	// todo: apply_filter, do_action, etc...
 
 	db := database.GetDB("")
-	if iid > 0 {
-		err = db.Table("metas").Where("target_id=?", iid).Where("meta_typ=?", typ).Where("meta_key=?", key).Count(&count).Error
-	} else {
-		// ObjectId 是全局唯一, 不需要type作为条件
-		err = db.Table("metas").Where("objetc_id=?", sid).Where("meta_key=?", key).Count(&count).Error
-	}
+
+	// ObjectId 是全局唯一, 不需要type作为条件
+	err = db.Table("metas").Where("object_id=?", sid).Where("meta_key=?", key).Count(&count).Error
+
 	if err != nil {
 		return false
 	}
@@ -323,11 +274,9 @@ func RegisterMeta() {
 // typ 用于查找属于哪个表的meta，例如account，post，reply等
 // tn  主表名称，例如posts, accounts, replies
 // id  字段，例如post_id, account_id, 或object_id
-func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc queryClause, err error) {
+func getMetaSql(typ, tn string, sid string, opts map[string]interface{}) (qc queryClause, err error) {
 	var (
 		ok          bool
-		iid         int64
-		sid         string
 		joins       []string
 		wheres      []string
 		join, where string
@@ -344,9 +293,7 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 		return
 	}
 
-	iid = goutils.ToInt64(id, 0)
-	sid = goutils.ToString(id, "")
-	if iid <= 0 && sid == "" {
+	if sid == "" {
 		err = fmt.Errorf("getMetaSql: param Id should not be empty.")
 		return
 	}
@@ -359,12 +306,10 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 			foreach ( $key_only_queries as $key => $q )
 				$where["key-only-$key"] = $wpdb->prepare( "$meta_table.meta_key = %s", trim( $q['key'] ) );
 		*/
-		if iid > 0 {
-			join = fmt.Sprintf(" INNER JOIN metas ON (%s.id = meta.target_id AND meta.typ = %s)", tn, typ)
-		} else {
-			// sid is unique, then typ is not needed
-			join = fmt.Sprintf(" INNER JOIN metas ON %s.id = meta.object_id", tn)
-		}
+
+		// sid is unique, then typ is not needed
+		join = fmt.Sprintf(" INNER JOIN metas ON %s.id = meta.object_id", tn)
+
 		joins = append(joins, join)
 		for _, k := range onlyKeyQueries {
 			where = "meta.meta_key=" + k
@@ -397,13 +342,10 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 			if cnt != 0 {
 				join += " AS " + alias
 			}
-			if iid > 0 {
-				join += fmt.Sprintf(" ON (%s.id = %s.target_id AND %s.typ = %s AND %s.meta_key = '%s')",
-					tn, alias, alias, typ, alias, key)
-			} else {
-				join += fmt.Sprintf(" ON (%s.id = %s.target_id AND %s.meta_key = '%s')",
-					tn, alias, alias, key)
-			}
+
+			join += fmt.Sprintf(" ON (%s.object_id = %s.object_id AND %s.meta_key = '%s')",
+				tn, alias, alias, key)
+
 			joins = append(joins, join)
 			wheres = append(wheres, " "+alias+".meta_id IS NULL")
 			continue
@@ -413,13 +355,10 @@ func getMetaSql(typ, tn string, id interface{}, opts map[string]interface{}) (qc
 		if cnt != 0 {
 			join += " AS " + alias
 		}
-		if iid > 0 {
-			join += fmt.Sprintf(" ON (%s.id = %s.target_id AND %s.typ = %s)",
-				tn, alias, alias, typ)
-		} else {
-			join += fmt.Sprintf(" ON (%s.id = %s.target_id)",
-				tn, alias)
-		}
+
+		join += fmt.Sprintf(" ON (%s.object_id = %s.object_id)",
+			tn, alias)
+
 		joins = append(joins, join)
 
 		// build where condition

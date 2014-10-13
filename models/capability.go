@@ -4,6 +4,7 @@ import (
 	drv "database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 )
 
@@ -22,10 +23,13 @@ type Role struct {
 	Capabilities map[string]bool `json:"capabilities"`
 }
 
+// 用户的权限分为两个部分：一部分是由用户的role继承的权限，一部分是单独赋给用户的权限Caps
+// AllCaps是两种权限的结合, Caps中的权限可以覆盖role中的权限
 type AccountCap struct {
-	Roles   []string        `json:"roles"`
-	Caps    map[string]bool `json:"caps"`
-	AllCaps map[string]bool `json:"-"`
+	Roles    []string        `json:"roles"`
+	Caps     map[string]bool `json:"caps"`
+	AllCaps  map[string]bool `json:"-"`
+	computed bool            `json:"-"`
 }
 
 // 更新role到数据库中
@@ -116,7 +120,7 @@ func (a *Account) GetCaps() error {
 	if a.Capability == nil {
 		a.Capability = &AccountCap{}
 	}
-	err := ScanMetaData(a.Id, "users", "capability", a.Capability)
+	err := ScanMetaData(a.ObjectId, "capability", a.Capability)
 	if err != nil {
 		return err
 	}
@@ -132,36 +136,169 @@ func (a *Account) SetCaps() error {
 		return err
 	}
 
-	return UpdateMetaData(a.Id, "users", "capability", val.(string), true)
+	return UpdateMetaData(a.ObjectId, "users", "capability", val.(string), true)
 }
 
-func (a *Account) AddRole(rname string) {
+func mergeRoleCaps(rname string, caps map[string]bool) {
+	jcRoles.lock.Lock()
+	defer jcRoles.lock.Unlock()
+
+	role, ok := jcRoles.Roles[rname]
+	if !ok {
+		log.Printf("mergeRoleCaps: Not found role by name " + rname)
+		return
+	}
+	for name, grant := range role.Capabilities {
+		caps[name] = grant
+	}
+}
+
+// 计算account role中的权限，加入到AllCap中
+func (a *Account) ComputeCaps() error {
+	if a.Capability == nil {
+		if err := a.GetCaps(); err != nil {
+			return err
+		}
+	}
+
+	for _, role := range a.Capability.Roles {
+		a.getRoleCaps(role)
+	}
+
+	for name, grant := range a.Capability.Caps {
+		a.Capability.AllCaps[name] = grant
+	}
+	a.Capability.computed = true
+
+	return nil
+}
+
+func (a *Account) getRoleCaps(rname string) {
+	mergeRoleCaps(rname, a.Capability.AllCaps)
+}
+
+func (a *Account) AddRole(rname string) error {
+	if a.Capability == nil {
+		if err := a.GetCaps(); err != nil {
+			return err
+		}
+	}
+
+	for _, name := range a.Capability.Roles {
+		if name == rname {
+			return nil
+		}
+	}
+	a.Capability.Roles = append(a.Capability.Roles, rname)
+	a.getRoleCaps(rname)
+
+	return a.SetCaps()
+}
+
+func (a *Account) DelRole(rname string) error {
+	if a.Capability == nil {
+		if err := a.GetCaps(); err != nil {
+			return err
+		}
+	}
+	for i, name := range a.Capability.Roles {
+		if name == rname {
+			a.Capability.Roles = append(a.Capability.Roles[:i], a.Capability.Roles[i+1:]...)
+			return a.SetCaps()
+		}
+	}
+	// 重新计算AllCaps
+	a.Capability.AllCaps = map[string]bool{}
+	a.ComputeCaps()
+	return nil
+}
+
+func (a *Account) SetRole(rname string) error {
+	if a.Capability == nil {
+		if err := a.GetCaps(); err != nil {
+			return err
+		}
+	}
+
+	a.Capability.Roles = []string{rname}
+	// 重新计算AllCaps
+	a.Capability.AllCaps = map[string]bool{}
+	a.ComputeCaps()
+
+	return a.SetCaps()
 
 }
 
-func (a *Account) DelRole(rname string) {
-}
+func (a *Account) AddCap(cap string, grant bool) error {
+	if a.Capability == nil {
+		if err := a.GetCaps(); err != nil {
+			return err
+		}
+	}
+	a.Capability.Caps[cap] = grant
+	a.Capability.AllCaps[cap] = grant
 
-func (a *Account) SetRole(rname string) {
-
-}
-
-func (a *Account) AddCap(cap string) {
-
-}
-
-func (a *Account) RemoveCap(cap string) {
+	return a.SetCaps()
 
 }
 
-func (a *Account) RemoveAllRole() {
+func (a *Account) RemoveCap(cap string) error {
+	if a.Capability == nil {
+		if err := a.GetCaps(); err != nil {
+			return err
+		}
+	}
+	delete(a.Capability.Caps, cap)
+	// 重新计算AllCaps
+	a.Capability.AllCaps = map[string]bool{}
+	a.ComputeCaps()
+
+	return a.SetCaps()
 
 }
 
-func (a *Account) RemoveAllCap() {
+func (a *Account) RemoveAllRole() error {
+	if a.Capability == nil {
+		if err := a.GetCaps(); err != nil {
+			return err
+		}
+	}
+
+	a.Capability.Roles = []string{}
+	// 重新计算AllCaps
+	a.Capability.AllCaps = map[string]bool{}
+	for name, grant := range a.Capability.Caps {
+		a.Capability.AllCaps[name] = grant
+	}
+
+	return a.SetCaps()
+}
+
+func (a *Account) RemoveAllCap() error {
+	if a.Capability == nil {
+		if err := a.GetCaps(); err != nil {
+			return err
+		}
+	}
+
+	a.Capability.Caps = map[string]bool{}
+	// 重新计算AllCaps
+	a.Capability.AllCaps = map[string]bool{}
+	a.ComputeCaps()
+
+	return a.SetCaps()
 
 }
 
 func (a *Account) HasCap(cap string) bool {
-	return false
+	if a.Capability == nil {
+		if err := a.GetCaps(); err != nil {
+			return false
+		}
+	}
+	if a.Capability.computed == false {
+		a.ComputeCaps()
+	}
+
+	return a.Capability.AllCaps[cap]
 }

@@ -3,13 +3,14 @@ package models
 import (
 	//"encoding/json"
 	//"fmt"
-	//"github.com/smtc/justcms/database"
+	"github.com/smtc/justcms/database"
 	"testing"
 )
 
 //
 func TestScan(t *testing.T) {
 	u1 := Account{Name: "guotie",
+		ObjectId: database.ObjectID(),
 		Capability: &AccountCap{
 			Roles: []string{"admin", "manager"},
 			Caps: map[string]bool{
