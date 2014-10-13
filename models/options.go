@@ -2,12 +2,13 @@ package models
 
 import (
 	//"time"
-	"fmt"
 	"github.com/smtc/justcms/database"
+	"strconv"
 )
 
+// todo: 需要加锁？
 // 缓存所有已经查询过的options
-var _options map[string]interface{} = make(map[string]interface{})
+var _options map[string]*Options = make(map[string]*Options)
 
 /*
 --
@@ -43,61 +44,63 @@ var defaultOptions = map[string]interface{}{
 // return:
 //   opt: the option value
 //   err: error
-func GetOptionByName(name string) (opt interface{}, err error) {
-	var row Options
-
+func GetOptionByName(name string) (opt Options, err error) {
 	if _options[name] != nil {
-		return _options[name], nil
+		return *_options[name], nil
 	}
 
 	db := database.GetDB("")
 
-	err = db.Where("name=?", name).Limit(1).Find(&row).Error
+	err = db.Where("name=?", name).Limit(1).Find(&opt).Error
 	if err != nil {
-		opt = defaultOptions[name]
 		return
 	}
-	opt = row.Value
+
 	return
 }
 
 func GetStringOptions(name string) (val string, err error) {
-	opt, err := GetOptionByName(name)
-	var ok bool
-	if val, ok = opt.(string); !ok {
-		err = fmt.Errorf("Cannot convert option %s to type string", name)
+	var opt Options
+	if opt, err = GetOptionByName(name); err == nil {
+		return opt.Value, nil
 	}
 	return
 }
 
 func GetIntOption(name string) (val int, err error) {
-	opt, err := GetOptionByName(name)
 	var (
-		ok    bool
-		val64 int64
+		opt Options
 	)
-	if val64, ok = opt.(int64); !ok {
-		err = fmt.Errorf("Cannot convert option %s to type string", name)
-	}
-	val = int(val64)
+	opt, err = GetOptionByName(name)
+
+	val, err = strconv.Atoi(opt.Value)
 	return
 
 }
 
 func GetInt64Option(name string) (val int64, err error) {
+	var opt Options
 
-	opt, err := GetOptionByName(name)
-	var (
-		ok bool
-	)
-	if val, ok = opt.(int64); !ok {
-		err = fmt.Errorf("Cannot convert option %s to type string", name)
-	}
+	opt, err = GetOptionByName(name)
+	val, err = strconv.ParseInt(opt.Value, 10, 64)
 	return
 }
 
 // update options
 // 2014-10-10
-func updateOptions() {
+func updateOptions(name, val string) (err error) {
+	opt, err := GetOptionByName(name)
+	if err != nil {
+		return
+	}
 
+	opt.Value = val
+
+	db := database.GetDB("")
+	if err = db.Save(&opt).Error; err != nil {
+		return
+	}
+
+	_options[opt.Name] = &opt
+	return
 }
