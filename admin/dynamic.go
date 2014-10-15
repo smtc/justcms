@@ -66,7 +66,7 @@ func DynamicList(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = total
-	h.RenderPage(p)
+	h.RenderPage(p, total)
 }
 
 func DynamicEntity(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -79,7 +79,7 @@ func DynamicEntity(c web.C, w http.ResponseWriter, r *http.Request) {
 	)
 
 	if id == 0 {
-		h.RenderJson(nil, 1)
+		h.RenderJson(nil, 1, "")
 		return
 	}
 
@@ -89,7 +89,7 @@ func DynamicEntity(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.RenderJson(entity, 1)
+	h.RenderJson(entity, 1, "")
 }
 
 func DynamicSave(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -112,7 +112,7 @@ func DynamicSave(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.RenderJson(nil, 1)
+	h.RenderJson(nil, 1, "")
 }
 
 func DynamicDelete(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -134,5 +134,5 @@ func DynamicDelete(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.RenderJson(nil, 1)
+	h.RenderJson(nil, 1, "")
 }
