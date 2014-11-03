@@ -17,14 +17,14 @@ func TableList(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	list, _ := goutils.ToMapList(tbls, []string{}, goutils.FilterModeExclude)
-	h.RenderPage(list)
+	h.RenderPage(list, 0)
 }
 
 func TableEntity(c web.C, w http.ResponseWriter, r *http.Request) {
 	h := goutils.HttpHandler(c, w, r)
 	id := h.Param.GetInt64("id", 0)
 	if id == 0 {
-		h.RenderJson(nil, 0)
+		h.RenderJson(nil, 0, "")
 		return
 	}
 
@@ -34,7 +34,7 @@ func TableEntity(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.RenderJson(t, 1)
+	h.RenderJson(t, 1, "")
 }
 
 func TableSave(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -59,7 +59,7 @@ func TableSave(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	h.RenderJson(t, 1)
+	h.RenderJson(t, 1, "")
 }
 
 func TableDelete(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -87,5 +87,5 @@ func TableDelete(c web.C, w http.ResponseWriter, r *http.Request) {
 		t.Delete()
 	}
 
-	h.RenderJson(nil, 1)
+	h.RenderJson(nil, 1, "")
 }

@@ -27,7 +27,7 @@ func ColumnList(c web.C, w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("%v", table.Columns)
 
 	list, _ := goutils.ToMapList(table.Columns, []string{}, goutils.FilterModeExclude)
-	h.RenderPage(list)
+	h.RenderPage(list, 0)
 }
 
 func ColumnEntity(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -39,10 +39,10 @@ func ColumnEntity(c web.C, w http.ResponseWriter, r *http.Request) {
 	)
 
 	if id == 0 {
-		h.RenderJson(nil, 0)
+		h.RenderJson(nil, 0, "")
 	} else {
 		column.Get(id)
-		h.RenderJson(column, 1)
+		h.RenderJson(column, 1, "")
 	}
 }
 
@@ -69,7 +69,7 @@ func ColumnSave(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.RenderJson(nil, 1)
+	h.RenderJson(nil, 1, "")
 }
 
 func ColumnDelete(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -86,7 +86,7 @@ func ColumnDelete(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.RenderJson(data, 1)
+	h.RenderJson(data, 1, "")
 }
 
 func ColumnType(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -97,7 +97,7 @@ func ColumnType(c web.C, w http.ResponseWriter, r *http.Request) {
 		types = append(types, models.Select{t.Name, t.Name})
 	}
 
-	h.RenderJson(types, 1)
+	h.RenderJson(types, 1, "")
 }
 
 func ColumnFilter(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -106,5 +106,5 @@ func ColumnFilter(c web.C, w http.ResponseWriter, r *http.Request) {
 	for k, v := range models.Filters {
 		filters[v] = k
 	}
-	h.RenderJson(filters, 1)
+	h.RenderJson(filters, 1, "")
 }
