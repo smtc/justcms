@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	//"github.com/jinzhu/gorm"
+	"github.com/smtc/glog"
 	"github.com/smtc/justcms/database"
 	//"log"
 	"time"
@@ -245,6 +246,94 @@ func RegisterPostType(typ string, opts map[string]interface{}) (err error) {
 	return
 }
 
+// post label
+var defLabels = map[string][2]string{
+	"name":                  [2]string{"Posts", "Pages"},
+	"menu_name":             [2]string{"Posts", "Pages"},
+	"name_comment":          [2]string{"post type general name", "post type general name"},
+	"singular_name":         [2]string{"Post", "Page"},
+	"singular_name_comment": [2]string{"post type singular name", "post type singular name"},
+	"add_new":               [2]string{"Add New", "Add New"},
+	"add_new_item":          [2]string{"Add New Post", "Add New Page"},
+	"edit_item":             [2]string{"Edit Post", "Edit Page"},
+	"new_item":              [2]string{"New Post", "New Page"},
+	"view_item":             [2]string{"View Post", "View Page"},
+	"search_items":          [2]string{"Search Posts", "Search Pages"},
+	"not_found":             [2]string{"No posts found.", "No pages found."},
+	"not_found_in_trash":    [2]string{"No posts found in Trash.", "No pages found in Trash."},
+	"parent_item_colon":     [2]string{"", "Parent Page:"},
+	"all_items":             [2]string{"All Posts", "All Pages"},
+}
+
+func getPostTypeLabels(typObject map[string]interface{}) {
+	labels := _customLabels(typObject)
+	postTyp := labels["name"]
+	_ = postTyp
+	_ = labels
+	/**
+	 * Filter the labels of a specific post type.
+	 *
+	 * The dynamic portion of the hook name, $post_type, refers to
+	 * the post type slug.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @see get_post_type_labels() for the full list of labels.
+	 *
+	 * @param array $labels Array of labels for the given post type.
+	 *	return apply_filters( "post_type_labels_{$post_type}", $labels );
+	 */
+}
+
+func _customLabels(typObject map[string]interface{}) map[string]string {
+	var labels map[string]string
+
+	ilabels, ok := typObject["labels"]
+	if !ok {
+		labels = make(map[string]string)
+		typObject["labels"] = labels
+	} else {
+		labels, ok = ilabels.(map[string]string)
+		if !ok {
+			glog.Error("_customLabels: param typObject[\"labels\"] is not map[string]string")
+			return nil
+		}
+	}
+
+	if label, ok := typObject["label"]; ok {
+		if labels["name"] == "" {
+			labels["name"] = label.(string)
+		}
+	}
+	if labels["singular_name"] == "" {
+		labels["singular_name"] = labels["name"]
+	}
+	if labels["name_admin_bar"] == "" {
+		labels["name_admin_bar"] = labels["singular_name"]
+	}
+	if labels["menu_name"] == "" {
+		labels["menu_name"] = labels["name"]
+	}
+	if labels["all_items"] == "" {
+		labels["all_items"] = labels["menu_name"]
+	}
+
+	hiera := GMapBool(GMap(typObject), "hierarchical")
+	for k, v := range defLabels {
+		if labels[k] == "" {
+			if hiera {
+				labels[k] = v[1]
+			} else {
+				labels[k] = v[0]
+			}
+		}
+	}
+
+	return labels
+}
+
+// post type support
+// wp: posts.php
 func addPostTypeSupports(typ string, features []string) {
 	m, ok := post_type_features[typ]
 	if !ok {

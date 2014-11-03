@@ -8,9 +8,31 @@ import (
 	"strings"
 )
 
+type GMap map[string]interface{}
+
 type Select struct {
 	Text  string `json:"text"`
 	Value string `json:"value"`
+}
+
+//
+func GMapBool(m GMap, key string) bool {
+	var (
+		b, ok bool
+		v     interface{}
+	)
+
+	if m == nil {
+		return false
+	}
+	if v, ok = m[key]; !ok {
+		return false
+	}
+	if b, ok = v.(bool); !ok {
+		return false
+	}
+
+	return b
 }
 
 // 任意类型, 是否为true
