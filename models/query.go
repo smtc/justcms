@@ -535,7 +535,7 @@ func getPosts(opt map[string]interface{}) (posts []*Post, err error) {
 	where, err = buildWhereClause(opt)
 	_ = where
 	// 查询多个posts
-	err = db.Find(&posts).Error
+	err = db.Where(where).Find(&posts).Error
 
 	return
 }

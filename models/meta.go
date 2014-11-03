@@ -453,29 +453,6 @@ func getCastType(i interface{}) string {
 	return s
 }
 
-// 判断参数是否为空：
-//    1 数组，但没有元素
-//    2 空字符串
-//    3 nil interface{}
-func isEmpty(i interface{}) bool {
-	if i == nil {
-		return true
-	}
-	if a, ok := i.([]interface{}); ok {
-		if len(a) == 0 {
-			return true
-		}
-		return false
-	}
-	if s, ok := i.(string); ok {
-		if s == "" {
-			return true
-		}
-		return false
-	}
-	return false
-}
-
 // 格式化opts参数, 传入getMetaSql
 //  opts["meta_relation"] 覆盖默认的relation(AND)
 func parseMetaVar(opts map[string]interface{}) (metaOpt map[string]interface{}, err error) {

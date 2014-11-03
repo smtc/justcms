@@ -13,15 +13,70 @@ type Select struct {
 	Value string `json:"value"`
 }
 
-// 转化为int
+// 任意类型, 是否为true
+//   v == nil: false
+//   v == "":  false
+//   v == 0:   false
+//   v == []interface{}
+//
+func isEmpty(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+	if s, ok := v.(string); ok {
+		if s == "" {
+			return false
+		}
+		return true
+	}
+	if s, ok := isIntType(v); ok {
+		if s == 0 {
+			return false
+		}
+		return true
+	}
+	if a, ok := v.([]interface{}); ok {
+		return len(a) == 0
+	}
+
+	return true
+}
+
+func isIntType(v interface{}) (int, bool) {
+	switch v.(type) {
+	case int:
+		return v.(int), true
+	case int8:
+		return int(v.(int8)), true
+	case int16:
+		return int(v.(int16)), true
+	case int32:
+		return int(v.(int32)), true
+	case int64:
+		return int(v.(int64)), true
+	case uint8:
+		return int(v.(uint8)), true
+	case uint16:
+		return int(v.(uint16)), true
+	case uint32:
+		return int(v.(uint32)), true
+	case uint64:
+		return int(v.(uint64)), true
+	}
+	return 0, false
+}
+
+// string转化为int
 func convertInt(key, value string) (i int, err error) {
 	var i64 int64
+
 	i64, err = convertInt64(key, value)
 	i = int(i64)
+
 	return
 }
 
-// 转化为int64
+// string转化为int64
 func convertInt64(key, value string) (i int64, err error) {
 	vv := strings.TrimSpace(value)
 	if i, err = strconv.ParseInt(vv, 10, 64); err == nil {
@@ -30,7 +85,7 @@ func convertInt64(key, value string) (i int64, err error) {
 	return
 }
 
-// 转化为布尔值
+// string转化为布尔值
 func convertBool(key, value string) (b bool, err error) {
 	vv := strings.ToLower(strings.TrimSpace(value))
 
