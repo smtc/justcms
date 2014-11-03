@@ -194,3 +194,7 @@ func getTaxSql(ta []taxQuery, relation, tableName, fieldName string) (qc queryCl
 	qc.join = join
 	return
 }
+
+func registerTaxonomy(postTyp string, tax []string) {
+
+}

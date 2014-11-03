@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	jc_post_types      map[string]interface{}
 	post_type_features = make(map[string]map[string]interface{})
 )
 
@@ -176,11 +177,6 @@ func GetPostByObjectId(oid string) (post *Post, err error) {
  *                                             this post type. Default 'post.php?post=%d'.
  * }
  * @return object|WP_Error The registered post type object, or an error object.
- */
-// register post type
-func RegisterPostType(typ string, opts map[string]interface{}) (err error) {
-	var ok bool
-
 	defaultOpts := map[string]interface{}{
 		"labels":               []string{},
 		"description":          "",
@@ -208,6 +204,11 @@ func RegisterPostType(typ string, opts map[string]interface{}) (err error) {
 		"_builtin":             false,
 		"_edit_link":           "post.php?post=%d",
 	}
+*/
+// register post type
+func RegisterPostType(typ string, opts map[string]interface{}) (err error) {
+	var ok bool
+
 	if _, ok = opts["publicly_queryable"]; !ok {
 		opts["publicly_queryable"] = opts["public"]
 	}
@@ -236,13 +237,20 @@ func RegisterPostType(typ string, opts map[string]interface{}) (err error) {
 		}
 	}
 
-	mergeMap(defaultOpts, opts)
+	getPostTypeLabels(opts)
+	opts["label"] = opts["labels"].(map[string]string)["name"]
 
+	taxes := GMapStringArray(GMap(opts), "taxonomy")
 	postType := sanitizeKey(typ)
 	if len(postType) >= 20 {
 		return fmt.Errorf("post type length should NOT exceed 20.")
 	}
+	registerTaxonomy(postType, taxes)
 
+	jc_post_types[postType] = opts
+
+	// todo: do_action
+	// do_action( 'registered_post_type', $post_type, $args );
 	return
 }
 

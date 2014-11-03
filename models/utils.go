@@ -15,7 +15,7 @@ type Select struct {
 	Value string `json:"value"`
 }
 
-//
+// 从Gmap中获取key的值，转化为bool类型
 func GMapBool(m GMap, key string) bool {
 	var (
 		b, ok bool
@@ -33,6 +33,36 @@ func GMapBool(m GMap, key string) bool {
 	}
 
 	return b
+}
+
+func GMapString(m GMap, key string) string {
+	var (
+		ok bool
+		s  string
+		v  interface{}
+	)
+	if v, ok = m[key]; !ok {
+		return ""
+	}
+	if s, ok = v.(string); ok {
+		return s
+	}
+	return ""
+}
+
+func GMapStringArray(m GMap, key string) []string {
+	var (
+		ok bool
+		iv interface{}
+		sa []string
+	)
+	if iv, ok = m[key]; !ok {
+		return []string{}
+	}
+	if sa, ok = iv.([]string); ok {
+		return sa
+	}
+	return []string{}
 }
 
 // 任意类型, 是否为true
