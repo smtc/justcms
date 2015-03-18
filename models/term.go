@@ -52,12 +52,14 @@ CREATE TABLE IF NOT EXISTS `wp_term_taxonomy` (
 
 type TermRelation struct {
 	ObjectId  int64 `json:"object_id"`
+	SiteId    int64 `json:"site_id"`
 	TermId    int64 `json:"term_id"`
 	TermOrder int   `json:"term_order"`
 }
 
 type TermTaxonomy struct {
 	Id          int64  `json:"id"`
+	SiteId      int64  `json:"site_id"`
 	Name        string `sql:"size:200" json:"name"`
 	Slug        string `sql:"size:200" json:"slug"`
 	TermGroup   int    `json:"term_group"`

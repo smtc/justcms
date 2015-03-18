@@ -3,15 +3,17 @@ package models
 import (
 	//"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/jinzhu/gorm"
 	"github.com/smtc/goutils"
-	"time"
 )
 
 // 账号管理
 
 type Account struct {
 	Id         int64  `json:"id"`
+	SiteId     int64  `json:"site_id"`
 	ObjectId   string `sql:"size:64" json:"object_id"`
 	Name       string `sql:"size:40" json:"name"`
 	Email      string `sql:"size:100" json:"email"`

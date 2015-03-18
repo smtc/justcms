@@ -17,6 +17,7 @@ var (
 // Post table
 type Post struct {
 	Id         int64     `json:"id"`
+	SiteId     int64     `json:"site_id"`
 	ObjectId   string    `sql:"size:64" json:"object_id"`
 	AuthorId   int64     `json:"author_id"`
 	AuthorName string    `sql:"size:40" json:"author_name"`
