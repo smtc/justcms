@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS `wp_comments` (
 
 type Reply struct {
 	Id          int64     `json:"id"`
+	SiteId      int64     `json:"site_id"`
 	ObjectId    string    `sql:"size:64" json:"object_id"`
 	PostId      int64     `json:"post_id"`
 	Author      string    `sql:"size:40" json:"author"`

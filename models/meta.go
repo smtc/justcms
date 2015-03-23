@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	//"github.com/smtc/goutils"
-	"github.com/smtc/justcms/database"
 	"log"
 	"regexp"
 	"strings"
+	"github.com/smtc/justcms/database"
 )
 
 // 本文有一个地方处理与wordpress不同，有可能造成sql语句查询结果错误，需要进一步验证，见parseMetaVar函数 ———— guotie 2014-09-24
 // meta_typ is the table name, such as account, post, reply
 type Meta struct {
 	Id        int64
+	SiteId    int64  `json:"site_id"`
 	MetaTyp   string `sql:"size:64" json:"meta_typ"`
 	ObjectId  string `sql:"size:64" json:"object_id"`
 	MetaKey   string `sql:"size:300" json:"meta_key"`
