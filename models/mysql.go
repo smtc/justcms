@@ -17,7 +17,8 @@ func (m *mysql) exec(db *gorm.DB, sqlStr string) error {
 	if sqlStr == "" {
 		return nil
 	}
-	_, err := db.NewScope(nil).DB().Query(sqlStr)
+	//_, err := db.NewScope(nil).DB().Query(sqlStr)
+	err := db.NewScope(nil).DB().Exec(sqlStr).Error
 	if err != nil {
 		log.Println(sqlStr, err.Error())
 	}
@@ -137,7 +138,8 @@ func (m *mysql) GetPage(db *gorm.DB, t *Table, where string, page, size int) (in
 	}
 	sqlStr = fmt.Sprintf(sqlStr, t.Name, where, (page-1)*size, size)
 
-	rows, err := db.NewScope(nil).DB().Query(sqlStr)
+	//rows, err := db.NewScope(nil).DB().Query(sqlStr)
+	rows, err := db.NewScope(nil).DB().Exec(sqlStr).Rows()
 	defer rows.Close()
 	if err != nil {
 		return nil, 0, err
