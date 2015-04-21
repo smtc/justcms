@@ -22,16 +22,15 @@ func GetDB(dbname string) *gorm.DB {
 		dbname = config.GetStringDefault("dbname", "")
 	}
 
-	db := dbs[dbname]
-	if db == nil {
-		newDB, err := opendb(dbname, "", "")
-		if err != nil {
-			panic(err)
-		}
-		db = &newDB
-		dbs[dbname] = db
+	if db, ok := dbs[dbname]; ok {
+		return db
 	}
-	return db
+	db, err := opendb(dbname, "", "")
+	if err != nil {
+		panic(err)
+	}
+	dbs[dbname] = &db
+	return &db
 }
 
 // 根据配置文件建立数据库连接
@@ -77,6 +76,8 @@ func opendb(dbname, dbuser, dbpass string) (gorm.DB, error) {
 			config.GetIntDefault("dbport", 3306),
 			dbname,
 		)
+		//dsn = "guotie:guotie@/justcms"
+		println(dsn)
 		//dsn += "&loc=Asia%2FShanghai"
 	} else if dbtype == "pg" || dbtype == "postgres" || dbtype == "postgresql" {
 		dbtype = "postgres"
