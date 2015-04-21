@@ -1,0 +1,6 @@
+package auth
+
+//
+func Signout() {
+
+}

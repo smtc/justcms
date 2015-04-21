@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>admin</title>
+    <link rel="stylesheet" href="../../assets/css/admin/style.css" />
+</head>
+<body>
+    <header class="header">
+        <div class="logo">Admin</div>
+    </header>
+
+    <div id="left_menu" class="menu">
+        <ul class="list-unstyled">
+            <li v-class="active:current==item.id" v-repeat="item : items">
+                <a v-on="click:current=item.id" href="javascript:;"><i class="icon icon-{{item.icon}}"></i>{{item.text}}
+                    <b class="icon icon-angle-right"></b></a>
+                <ul v-show="current==item.id" class="list-unstyled">
+                    <li v-repeat="item.children">
+                        <a v-class="highlight:highlight==id" v-on="click:highlight=id" v-href="{{id}}">{{text}}</a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div class="page-wrapper slide-reveal" v-view="view"></div>
+
+    <div v-component="message" class="message"></div>
+    <div v-component="loading" img="../../assets/images/loading.gif" text="处理中，请稍候"></div>
+
+    <script type="text/javascript" src="../../assets/js/vui.js"></script>
+    <script>
+    (function () {
+        new Vue({
+            el: '#left_menu',
+            directives: {
+                href: vui.require('./directives/href')
+            },
+            data: {
+                items: [],
+                current: '',
+                highlight: ''
+            },
+            created: function () {
+                this.current = ''
+                this.highlight = ''
+                vui.request('menu').end(function (res) {
+                    this.items = res.body
+                }.bind(this))
+            }
+        })
+
+        vui.init()
+
+        vui.route(function (path) {
+            if (path.charAt(path.length-1) !== '/')
+                vui.$data.view = path
+        }, true)
+    })()
+    </script>
+</body>
+</html>

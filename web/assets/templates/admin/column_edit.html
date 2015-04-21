@@ -1,0 +1,25 @@
+<div src="column/{0}/" v-component="form">
+    <div class="page-header">
+        <h3>数据表管理 <small><i class="icon icon-angle-double-right"></i> 字段编辑</small></h3>
+        <div class="buttons btn-group">
+            <a class="btn btn-default" href="javascript:;" onclick="history.back()" ><i class="icon icon-reply"></i> 返回</a>
+        </div>
+    </div>
+    <div class="page-content scrollable">
+        <form class="form-horizontal" role="form">
+            <form-control label="字段名" col=",4" inline="true" type="text" tip="唯一" require v-with="value:model.name"></form-control>
+            <form-control label="中文名" col=",4" inline="true" type="text" require v-with="value:model.alias"></form-control>
+            <form-control label="排序" col=",3" inline="true" type="integer" require v-with="value:model.order_index"></form-control>
+            <form-control label="类型" col=",3" inline="true" type="select" src="column/type" require v-with="value:model.type"></form-control>
+            <form-control label="长度" col=",2" inline="true" type="integer" tip="整数。类型为varchar时需要填写" v-with="value:model.size"></form-control>
+            <form-control label="" type="checkbox" name="checkbox" v-with="value:model.not_null" options="'不能为空':true"></form-control>
+            <form-control label="" type="checkbox" name="checkbox" v-with="value:model.edit_able" options="'可编辑':true"></form-control>
+            <form-control label="默认值" col=",6" inline="true" type="text" v-with="value:model.default_value"></form-control>
+            <form-control label="查询条件" type="checkbox" inline="true" src="column/filter" name="checkbox" v-with="value:model.filter"></form-control>
+            <form-control label="备注" col=",10" maxlen="512" type="textarea" rows="5" v-with="value:model.des"></form-control>
+            <form-control>
+                <button class="btn btn-primary" type="submit">提 交</button>
+            </form-control>
+        </form>
+    </div>
+</div>

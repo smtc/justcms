@@ -1,0 +1,40 @@
+.select {
+  position: relative;
+  cursor: pointer;
+  min-width: 100px;
+
+  .inner {
+    height: 100%;
+  }
+
+
+  .dropdown-menu {
+    width: 100%;
+
+    li a {
+      padding: 3px 10px;
+
+      &.active {
+        background-color: #eee;
+        color: #333;
+      }
+
+      &:hover {
+        color: #fff;
+        background-color: @brand-primary;
+      }
+    }
+  }
+
+  &.active .dropdown-menu {
+    display: block;
+  }
+
+  .caret {
+    position: absolute;
+    right: 10px;
+    top: 14px;
+  }
+}
+
+

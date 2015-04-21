@@ -1,0 +1,51 @@
+<div src="column/{0}/" routeChange="true" pageable="false" v-component="page">
+    <div class="page-header">
+        <h3>数据表管理 <small><i class="icon icon-angle-double-right"></i> 字段列表</small></h3>
+        <div class="buttons">
+            <a class="btn btn-default" href="javascript:;" onclick="history.back()" ><i class="icon icon-reply"></i> 返回</a>
+            <a class="btn btn-success" v-href="column.edit:{{colon[0]}}#0"><i class="icon icon-plus"></i> 新建</a>
+            <a class="btn btn-info" href="javascript:;" v-on="click:update"><i class="icon icon-refresh"></i> 刷新</a>  
+            <a class="btn btn-danger" v-on="click:delSelect('id')" title="删除" href="javascript:;"><i class="icon icon-trash-o"></i> 删除</a>
+        </div>
+    </div>
+    <div class="page-content scrollable">
+        <table class="table table-listed">
+            <thead>
+                <tr>
+                    <th style="width:19px;" v-html="'selectall'|icon"></th>
+                    <th style="width: 40px;"></th>
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>长度</th>
+                    <th>主键</th>
+                    <th>必填</th>
+                    <th>可编辑</th>
+                    <th>查询条件</th>
+                    <th>中文名</th>
+                    <th>描述</th>
+                    <th>排序</th>
+                    <th>修改时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-repeat="data">
+                    <td v-html="'select'|icon"></td>
+                    <td>
+                        <a title="编辑" v-href="column.edit:{{colon[0]}}#{{id}}"><i class="icon icon-edit"></i></a>&nbsp;
+                    </td>
+                    <td>{{name}}</td>
+                    <td>{{type}}</td>
+                    <td>{{size}}</td>
+                    <td v-html="primary_key|icon"></td>
+                    <td v-html="not_null|icon"></td>
+                    <td v-html="edit_able|icon"></td>
+                    <td>{{filter}}</td>
+                    <td>{{alias}}</td>
+                    <td>{{des}}</td>
+                    <td>{{order_index}}</td>
+                    <td>{{edit_at}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

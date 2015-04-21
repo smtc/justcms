@@ -1,0 +1,36 @@
+{
+  "name": "JustCms",
+  "version": "0.1.0",
+  "description": "just a cms",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/smtc/JustCms.git"
+  },
+  "keywords": [
+    "just, cms"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/smtc/JustCms/issues"
+  },
+  "homepage": "https://github.com/smtc/JustCms",
+  "devDependencies": {
+    "chai": "*",
+    "express": "*",
+    "gulp": "*",
+    "gulp-component": "*",
+    "gulp-jshint": "*",
+    "gulp-less": "*",
+    "gulp-minify-css": "*",
+    "gulp-mocha": "*",
+    "gulp-rename": "*",
+    "gulp-shell": "*",
+    "gulp-uglify": "*",
+    "gulp-util": "*",
+    "mocha": "*",
+    "mocha-phantomjs": "*"
+  }
+}

@@ -1,0 +1,60 @@
+[
+    {
+        "id": "account",
+        "text": "账户管理",
+        "icon": "user",
+        "children": [
+            {
+                "id": "account.list",
+                "text": "用户管理",
+                "children": [
+                    {
+                        "id": "account.roles",
+                        "text": "角色编辑"
+                    }
+                ]
+            },
+            {
+                "id": "role.list",
+                "text": "角色管理",
+                "children": [
+                    {
+                        "id": "role.edit",
+                        "text": "编辑"
+                    },
+                    {
+                        "id": "role.delete",
+                        "text": "删除"
+                    }
+                ]
+            }
+        ]
+    },
+
+    {
+        "id": "sys",
+        "text": "系统设置",
+        "icon": "cogs",
+        "children": [
+            {
+                "id": "sys.config.list",
+                "text": "参数设置",
+                "children": [
+                    {
+                        "id": "sys.config.edit",
+                        "text": "编辑"
+                    },
+                    {
+                        "id": "sys.config.delete",
+                        "text": "删除"
+                    }
+                ]
+            },
+            {
+                "id": "table.list",
+                "text": "Table Manager"
+            }
+
+        ]
+    }
+]

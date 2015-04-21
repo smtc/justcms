@@ -1,0 +1,43 @@
+<div src="account/" v-component="page">
+    <div class="page-header">
+        <h3>账户管理 <small><i class="icon icon-angle-double-right"></i> 用户列表</small></h3>
+        <div class="buttons btn-group">
+            <a class="btn btn-success" v-href="account.edit#0"><i class="icon icon-plus"></i> 新建</a>
+            <a class="btn btn-default" ><i class="icon icon-refresh"></i> 刷新</a>
+        </div>
+    </div>
+    <div class="page-content scrollable">
+        <form class="form-inline form-search" v-on="submit:search">
+            <label class="form-group"><input class="form-control" placeholder="Email" v-model="filters.email" /></label>
+            <label class="form-group"><input class="form-control" placeholder="用户名" v-model="filters.name" /></label>
+            <label class="form-group"><button class="btn btn-primary">确定</button></label>
+            <label class="form-group"><button v-on="click:filters={}" class="btn btn-default">重置</button></label>
+        </form>
+        <table class="table table-listed">
+            <thead>
+                <tr>
+                    <th v-on="click: selectAll"><i v-class="icon-check-square-o:allChecked, icon-square-o:!allChecked" class="icon"></i></th>
+                    <th style="width: 50px;"></th>
+                    <th>Email</th>
+                    <th>用户名</th>
+                    <th>角色</th>
+                    <th class="text-center">状态</th>
+                    <th>最后登录IP</th>
+                    <th>登录时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-repeat="item:data">
+                    <td v-on="click: select(this)"><i v-class="icon-check-square-o:vui_checked, icon-square-o:!vui_checked" class="icon"></i></td>
+                    <td></td>
+                    <td>{{item.email}}</td>
+                    <td>{{item.name}}</td>
+                    <td>{{item.rolesName}}</td>
+                    <td class="text-center" ng-bind-html="item.status|status"></td>
+                    <td>{{item.lastLoginIp}}</td>
+                    <td>{{item.lastLoginTime}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
