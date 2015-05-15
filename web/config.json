@@ -1,8 +1,0 @@
-{
-	"securekey":"e9EfuAVpK1OuBKHOpv0C0mFt9xfb3AlReUzGbetkXBtb2vkz",
-	"dbtype":"mysql",
-	"dbname":"justcms",
-    "dbdynamic":"justcms_dynamic",
-	"dbuser":"root",
-	"dbpass":"123456"
-}

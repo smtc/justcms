@@ -1,6 +1,10 @@
 {
-	"dbhost": "127.0.0.1",
-	"dbuser": "root",
+	"securekey":"e9EfuAVpK1OuBKHOpv0C0mFt9xfb3AlReUzGbetkXBtb2vkz",
+	"dbtype":"mysql",
+	"dbhost": "localhost",
+	"dbuser": "guotie",
 	"dbname": "justcms",
-	"dbpass": "guotie.action"
+	"dbpass": "guotie",
+	"sessionSecret": "e9DuuAVpK1OuBKHOpv0C0mFt9xfb3AlReuyGbetkXBtb2Ukz",
+	"CreateTmpUser": true
 }

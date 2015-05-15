@@ -2,8 +2,10 @@ package auth
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/smtc/justcms/database"
+	"github.com/smtc/justcms/session"
 )
 
 var (
@@ -32,4 +34,21 @@ func Signin(msisdn, passwd string) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+// 保存用户的uid到session中
+// secs 为0时，将使用默认值 86400 * 7
+func SaveUserSession(w http.ResponseWriter, r *http.Request, user *User, secs int) {
+	sess := session.NewSession(r)
+	if secs == 0 {
+		secs = 86400 * 7
+	}
+	sess.Create(secs, nil)
+	sess.SetKey("uid", user.Id)
+	sess.SetKey("user_objid", user.ObjectId)
+
+	println(sess.CookieValue())
+	sess.SetStore()
+	// save session to client
+	sess.Save(w)
 }

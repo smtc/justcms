@@ -6,11 +6,9 @@
 </head>
 <body>
 <section>
-  {% for post in get_posts() %}
 	<div>
-		{{show_post(post)|safe}}
+		hi, {{user.Name}}, {{user.Id}}, {{user.ObjectId}}
 	</div>
-  {% endfor %}
 </section>
 </body>
 </html>

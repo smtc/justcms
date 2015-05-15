@@ -1,13 +1,21 @@
 package auth
 
 import (
-	//"encoding/json"
-	//"fmt"
+	"encoding/json"
+	"errors"
 	"time"
 
 	//"github.com/jinzhu/gorm"
 	"github.com/smtc/justcms/database"
+	"github.com/smtc/justcms/session"
 	"github.com/smtc/justcms/utils"
+)
+
+const KEY_TMP_USERS = "tmp_users"
+
+var (
+	NoUserInCookie = errors.New("Not found user id in cookie.")
+	VisitUser      = &User{}
 )
 
 // 账号管理
@@ -63,12 +71,70 @@ type User struct {
 func createUser(msisdn, name, passwd string) (*User, error) {
 	objId := utils.ObjectId()
 	user := User{
-		ObjectId: objId,
-		Msisdn:   msisdn,
-		Name:     name,
-		Password: createpasswd(passwd),
+		ObjectId:  objId,
+		Msisdn:    msisdn,
+		Name:      name,
+		Password:  createpasswd(passwd),
+		CreatedAt: time.Now(),
 	}
 
 	err := database.GetDB("").Save(&user).Error
 	return &user, err
+}
+
+// 创建临时用户
+func CreateTmpUser() *User {
+	return &User{
+		Id:        -1,
+		SiteId:    0,
+		ObjectId:  utils.ObjectId(),
+		CreatedAt: time.Now(),
+		LastLogin: time.Now(),
+	}
+}
+
+// 将临时用户保存在redis中
+func SaveTmpUser(u *User, secs int) error {
+	if secs == 0 {
+		secs = 86400 * 7
+	}
+	buf, err := json.Marshal(u)
+	if err != nil {
+		return err
+	}
+	err = database.SET(u.ObjectId, buf)
+
+	return err
+}
+
+// 获取用户:
+//    当Id为-1时，直接从redis中获取用户；
+//    当Id>0时，从数据库中获取用户
+func GetUser(sess session.Session) (user *User, err error) {
+	// 从cookie中获取用户id
+	uid, ok := sess.Get("uid").(int64)
+	if !ok {
+		return nil, NoUserInCookie
+	}
+
+	user = &User{}
+	if uid > 0 {
+		// 从数据库中获取用户
+		user.Id = uid
+		err = database.GetDB("").Find(user).Error
+
+		return user, err
+	}
+
+	// 从redis中获取用户
+	objId, ok := sess.Get("user_objid").(string)
+	if !ok {
+		return nil, NoUserInCookie
+	}
+	val, err := database.GET(objId)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(val, user)
+	return
 }
